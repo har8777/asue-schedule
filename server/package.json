@@ -1,0 +1,20 @@
+{
+  "name": "asue-schedule-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Դասացուցակի համակարգի API սերվեր (Node.js + SQLite, առանց արտաքին կախվածությունների)",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/main.ts",
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "~6.0.2"
+  }
+}

@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+/* Մութ թեման միանում է <html class="dark">-ով */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Noto Sans Armenian', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-900: #1e3a8a;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply min-h-screen bg-slate-50 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  #root {
+    @apply flex min-h-screen flex-col;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-sheet-in {
+  animation: sheet-in 0.18s ease-out;
+}
+
+/* Տպման ժամանակ թաքցվում են ղեկավարման տարրերը, և աղյուսակը տեղավորվում է էջում */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-table-wrapper {
+    overflow: visible !important;
+  }
+}

@@ -1,0 +1,5 @@
+# Տողերի վերջավորությունները պահվում են միատեսակ (LF), անկախ Windows/Linux-ից
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.db binary
