@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '../utils/classnames'
+import { DROPDOWN_BOUNDARY_ATTRIBUTE } from './dropdown-list.component'
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
 
@@ -84,7 +85,9 @@ export const Modal = ({ isOpen, onClose, title, description, size = 'md', footer
             <X className="size-5" />
           </button>
         </div>
-        <div className="scrollbar-thin flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="scrollbar-thin flex-1 overflow-y-auto px-5 py-4" {...{ [DROPDOWN_BOUNDARY_ATTRIBUTE]: '' }}>
+          {children}
+        </div>
         {footer && (
           <div className="safe-bottom flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-5 py-3 dark:border-slate-800">
             {footer}

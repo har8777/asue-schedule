@@ -4,7 +4,8 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import type { FacultyCatalog } from '../../catalog/catalog.types'
 import { Button } from '../../common/components/button.component'
 import { useConfirm } from '../../common/components/confirm.context'
-import { FormField, SegmentedControl, TextInput } from '../../common/components/form-controls.component'
+import { ComboboxInput } from '../../common/components/combobox-input.component'
+import { FormField, SegmentedControl } from '../../common/components/form-controls.component'
 import { Modal } from '../../common/components/modal.component'
 import { TagInput } from '../../common/components/tag-input.component'
 import { useToast } from '../../common/components/toast.context'
@@ -56,7 +57,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
   const toast = useToast()
   const confirm = useConfirm()
   const [isDeleting, setIsDeleting] = useState(false)
-  const { control, register, handleSubmit, reset, setValue, setError, formState } = useForm<LessonFormValues>({
+  const { control, handleSubmit, reset, setValue, setError, formState } = useForm<LessonFormValues>({
     defaultValues: toFormValues(undefined),
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'parts' })
@@ -206,11 +207,20 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
                 </legend>
               )}
               <FormField label="Առարկա" error={formState.errors.parts?.[index]?.subject?.message}>
-                <TextInput
-                  list="lesson-subjects"
-                  placeholder="Ընտրեք կամ գրեք առարկան"
-                  autoComplete="off"
-                  {...register(`parts.${index}.subject`)}
+                <Controller
+                  control={control}
+                  name={`parts.${index}.subject`}
+                  render={({ field: subjectField }) => (
+                    <ComboboxInput
+                      ref={subjectField.ref}
+                      value={subjectField.value}
+                      onChange={subjectField.onChange}
+                      onBlur={subjectField.onBlur}
+                      options={catalogNames.subjects}
+                      placeholder="Ընտրեք կամ գրեք առարկան"
+                      hasError={Boolean(formState.errors.parts?.[index]?.subject)}
+                    />
+                  )}
                 />
               </FormField>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -259,11 +269,6 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
           </Button>
         )}
 
-        <datalist id="lesson-subjects">
-          {catalogNames.subjects.map((subject) => (
-            <option key={subject} value={subject} />
-          ))}
-        </datalist>
 
         {isChecking && (
           <p className="flex items-center gap-2 text-xs text-slate-400">

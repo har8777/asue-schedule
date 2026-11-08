@@ -1,13 +1,15 @@
 import { X } from 'lucide-react'
-import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
-import { createPortal } from 'react-dom'
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { cn } from '../utils/classnames'
+import {
+  DropdownList,
+  moveHighlight,
+  normalizeOptionText,
+  useDropdownPosition,
+  type DropdownOption,
+} from './dropdown-list.component'
 
-/** Ընտրության տարբերակ։ Եթե disabledReason կա, տարբերակը ցուցադրվում է ոչ ակտիվ՝ պատճառով։ */
-export interface TagOption {
-  value: string
-  disabledReason?: string
-}
+export type TagOption = DropdownOption
 
 interface TagInputProps {
   value: string[]
@@ -22,43 +24,6 @@ interface TagInputProps {
 }
 
 const MAX_VISIBLE_OPTIONS = 60
-const DROPDOWN_MAX_HEIGHT = 240
-const DROPDOWN_GAP = 4
-
-/**
- * Ցուցակի դիրքը էկրանի նկատմամբ (fixed)։ Ցուցակը ցուցադրվում է portal-ով՝ պատուհանի
- * վրայով, որ չկտրվի scroll-ով բլոկում և չտեղաշարժի մյուս տարրերը։
- * Եթե ներքևում տեղ չկա, բացվում է դաշտից վերև։
- */
-const useDropdownPosition = (anchor: HTMLElement | null, isOpen: boolean): CSSProperties | null => {
-  const [style, setStyle] = useState<CSSProperties | null>(null)
-
-  useLayoutEffect(() => {
-    if (!isOpen || !anchor) return
-    const update = () => {
-      const rect = anchor.getBoundingClientRect()
-      const spaceBelow = window.innerHeight - rect.bottom
-      const opensUp = spaceBelow < DROPDOWN_MAX_HEIGHT && rect.top > spaceBelow
-      setStyle({
-        position: 'fixed',
-        left: rect.left,
-        width: rect.width,
-        maxHeight: Math.min(DROPDOWN_MAX_HEIGHT, (opensUp ? rect.top : spaceBelow) - DROPDOWN_GAP * 2),
-        ...(opensUp ? { bottom: window.innerHeight - rect.top + DROPDOWN_GAP } : { top: rect.bottom + DROPDOWN_GAP }),
-      })
-    }
-    update()
-    window.addEventListener('resize', update)
-    window.addEventListener('scroll', update, true)
-    return () => {
-      window.removeEventListener('resize', update)
-      window.removeEventListener('scroll', update, true)
-    }
-  }, [anchor, isOpen])
-
-  return isOpen ? style : null
-}
-const normalize = (text: string) => text.trim().replace(/\s+/g, ' ').toLocaleLowerCase('hy')
 
 /**
  * Մի քանի արժեքի ընտրություն (օր.՝ երկու դասախոս)։ Ցուցակում զբաղված տարբերակները
@@ -69,17 +34,20 @@ export const TagInput = ({ value, onChange, options, placeholder, disabled, maxT
   const [isOpen, setIsOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const listId = useId()
 
-  const optionByKey = useMemo(() => new Map(options.map((option) => [normalize(option.value), option])), [options])
-  const selectedKeys = useMemo(() => new Set(value.map(normalize)), [value])
+  const optionByKey = useMemo(() => new Map(options.map((option) => [normalizeOptionText(option.value), option])), [options])
+  const selectedKeys = useMemo(() => new Set(value.map(normalizeOptionText)), [value])
 
   const visibleOptions = useMemo(() => {
-    const needle = normalize(draft)
+    const needle = normalizeOptionText(draft)
     return options
-      .filter((option) => !selectedKeys.has(normalize(option.value)) && (!needle || normalize(option.value).includes(needle)))
+      .filter((option) => {
+        const key = normalizeOptionText(option.value)
+        return !selectedKeys.has(key) && (!needle || key.includes(needle))
+      })
       .sort((a, b) => Number(Boolean(a.disabledReason)) - Number(Boolean(b.disabledReason)))
       .slice(0, MAX_VISIBLE_OPTIONS)
   }, [options, draft, selectedKeys])
@@ -89,12 +57,12 @@ export const TagInput = ({ value, onChange, options, placeholder, disabled, maxT
   const addTag = (raw: string) => {
     const tag = raw.trim().replace(/,$/, '').trim()
     if (!tag || value.length >= maxTags) return
-    const known = optionByKey.get(normalize(tag))
+    const known = optionByKey.get(normalizeOptionText(tag))
     if (known?.disabledReason) {
       setError(`«${known.value}»՝ ${known.disabledReason}`)
       return
     }
-    if (!selectedKeys.has(normalize(tag))) onChange([...value, known?.value ?? tag])
+    if (!selectedKeys.has(normalizeOptionText(tag))) onChange([...value, known?.value ?? tag])
     setDraft('')
     setError(null)
     setHighlighted(0)
@@ -104,8 +72,7 @@ export const TagInput = ({ value, onChange, options, placeholder, disabled, maxT
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       setIsOpen(true)
-      const delta = event.key === 'ArrowDown' ? 1 : -1
-      setHighlighted((current) => (enabledOptions.length ? (current + delta + enabledOptions.length) % enabledOptions.length : 0))
+      setHighlighted((current) => moveHighlight(enabledOptions, current, event.key === 'ArrowDown' ? 1 : -1))
     } else if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault()
       const option = isOpen && draft ? enabledOptions[highlighted] : undefined
@@ -132,7 +99,7 @@ export const TagInput = ({ value, onChange, options, placeholder, disabled, maxT
         )}
       >
         {value.map((tag) => {
-          const known = optionByKey.get(normalize(tag))
+          const known = optionByKey.get(normalizeOptionText(tag))
           const isBusy = Boolean(known?.disabledReason)
           const isUnknown = !known && Boolean(unknownLabel)
           return (
@@ -201,44 +168,15 @@ export const TagInput = ({ value, onChange, options, placeholder, disabled, maxT
         </p>
       )}
 
-      {dropdownStyle &&
-        createPortal(
-        <ul
+      {dropdownStyle && (
+        <DropdownList
           id={listId}
-          role="listbox"
           style={dropdownStyle}
-          className="scrollbar-thin z-[70] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900"
-        >
-          {visibleOptions.map((option) => {
-            const isDisabled = Boolean(option.disabledReason)
-            const isHighlighted = !isDisabled && enabledOptions[highlighted]?.value === option.value
-            return (
-              <li
-                key={option.value}
-                role="option"
-                aria-selected={isHighlighted}
-                aria-disabled={isDisabled}
-                // mousedown-ը, որ input-ը չկորցնի ֆոկուսը մինչև ընտրությունը
-                onMouseDown={(event) => {
-                  event.preventDefault()
-                  if (!isDisabled) addTag(option.value)
-                }}
-                className={cn(
-                  'flex flex-col rounded-lg px-3 py-1.5 text-sm',
-                  isDisabled
-                    ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
-                    : 'cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-800',
-                  isHighlighted && 'bg-brand-50 dark:bg-slate-800',
-                )}
-              >
-                <span className={cn(isDisabled && 'line-through')}>{option.value}</span>
-                {isDisabled && <span className="text-[11px] leading-tight">{option.disabledReason}</span>}
-              </li>
-            )
-          })}
-        </ul>,
-          document.body,
-        )}
+          options={visibleOptions}
+          highlightedValue={enabledOptions[highlighted]?.value}
+          onSelect={addTag}
+        />
+      )}
     </div>
   )
 }
