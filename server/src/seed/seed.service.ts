@@ -8,7 +8,8 @@ import type { CohortsRepository } from '../modules/cohorts/cohorts.repository.ts
 import type { FacultiesRepository } from '../modules/faculties/faculties.repository.ts'
 import type { FacultiesService } from '../modules/faculties/faculties.service.ts'
 import type { UsersRepository } from '../modules/users/users.repository.ts'
-import { COMMON_SUBJECTS, SEED_FACULTIES } from './seed.data.ts'
+import { OFFICIAL_CATALOG } from './catalog.data.ts'
+import { SEED_FACULTIES } from './seed.data.ts'
 
 interface SeedDependencies {
   db: Database
@@ -47,8 +48,9 @@ export const seedDatabase = async (deps: SeedDependencies): Promise<void> => {
             settings: createDefaultCohortSettings(),
           }),
         )
-        ;[...seed.subjects, ...COMMON_SUBJECTS].forEach((name) => catalog.insertIfMissing(seed.id, 'subject', name))
-        seed.lecturers.forEach((name) => catalog.insertIfMissing(seed.id, 'lecturer', name))
+        const official = OFFICIAL_CATALOG[seed.id] ?? { subjects: [], lecturers: [] }
+        official.subjects.forEach((name) => catalog.insertIfMissing(seed.id, 'subject', name))
+        official.lecturers.forEach((name) => catalog.insertIfMissing(seed.id, 'lecturer', name))
         Object.entries(seed.rooms).forEach(([floor, rooms]) =>
           rooms.forEach((room) => catalog.insertIfMissing(seed.id, 'room', room, floor)),
         )

@@ -1,9 +1,11 @@
 import type { Database } from './database.ts'
 
-interface Migration {
+/** Սխեմայի (sql) կամ տվյալների (run) միգրացիա։ Յուրաքանչյուրը կիրառվում է միայն մեկ անգամ։ */
+export interface Migration {
   version: number
   name: string
-  sql: string
+  sql?: string
+  run?: (db: Database) => void
 }
 
 const MIGRATIONS: Migration[] = [
@@ -96,15 +98,20 @@ const MIGRATIONS: Migration[] = [
   },
 ]
 
-/** Կիրառում է դեռ չկիրառված միգրացիաները՝ ըստ տարբերակի։ */
-export const runMigrations = (db: Database): void => {
+/**
+ * Կիրառում է դեռ չկիրառված միգրացիաները՝ ըստ տարբերակի։ Տվյալների միգրացիաները
+ * (օր.՝ տեղեկատուի թարմացում) փոխանցվում են դրսից, որպեսզի core-ը կախված չլինի մոդուլներից։
+ */
+export const runMigrations = (db: Database, dataMigrations: Migration[] = []): void => {
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)')
   const applied = new Set(db.all<{ version: number }>('SELECT version FROM schema_migrations').map((row) => row.version))
 
-  for (const migration of MIGRATIONS) {
+  const all = [...MIGRATIONS, ...dataMigrations].sort((a, b) => a.version - b.version)
+  for (const migration of all) {
     if (applied.has(migration.version)) continue
     db.transaction(() => {
-      db.exec(migration.sql)
+      if (migration.sql) db.exec(migration.sql)
+      migration.run?.(db)
       db.run(
         'INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)',
         migration.version,
