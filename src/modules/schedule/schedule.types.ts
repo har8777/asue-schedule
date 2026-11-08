@@ -72,7 +72,19 @@ export interface ScheduleConflict {
 
 export interface SaveLessonPayload extends LessonKey {
   parts: LessonPart[]
-  force?: boolean
+}
+
+/** Ով է զբաղեցնում դասախոսին կամ լսարանը նույն ժամին (այլ վանդակում կամ ֆակուլտետում)։ */
+export interface Occupant {
+  name: string
+  partIndex: number
+  partsCount: number
+  location: LessonLocation
+}
+
+export interface SlotOccupancy {
+  lecturers: Occupant[]
+  rooms: Occupant[]
 }
 
 export interface SaveLessonResult {

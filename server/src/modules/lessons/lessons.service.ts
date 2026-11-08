@@ -1,5 +1,6 @@
 import type { Database } from '../../core/database/database.ts'
-import { conflict, notFound, roomOccupied } from '../../core/http/http-error.ts'
+import { conflict, notFound } from '../../core/http/http-error.ts'
+import { normalizeName } from '../../core/utils/id.ts'
 import { createId, nowIso } from '../../core/utils/id.ts'
 import { assertFacultyAccess } from '../auth/auth.guards.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
@@ -11,7 +12,15 @@ import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { Faculty } from '../faculties/faculties.types.ts'
 import { detectConflictsFor } from './conflict-detector.ts'
 import type { LessonsRepository } from './lessons.repository.ts'
-import type { Lesson, LessonKey, LessonWithContext, SaveLessonInput, ScheduleConflict } from './lessons.types.ts'
+import type {
+  Lesson,
+  LessonKey,
+  LessonLocation,
+  LessonWithContext,
+  SaveLessonInput,
+  ScheduleConflict,
+  SlotOccupancy,
+} from './lessons.types.ts'
 import { isEmptyLesson } from './lessons.validation.ts'
 
 export interface CohortSchedule {
@@ -62,6 +71,40 @@ export class LessonsService {
     return { faculty, cohort, lessons: this.lessons.findByCohort(cohortId) }
   }
 
+  /**
+   * Տվյալ ժամին զբաղված դասախոսները (ամբողջ համալսարանում) և լսարանները (նույն մասնաշենքում)՝
+   * բացառությամբ խմբագրվող վանդակի։ Խմբագրիչը դրանք ցույց է տալիս որպես ոչ ակտիվ։
+   */
+  getOccupancy(key: LessonKey): SlotOccupancy {
+    const { faculty } = this.getCohortContext(key.cohortId)
+    const building = normalizeName(faculty.building)
+    const others = this.lessons
+      .findWithContext({ day: key.day, slot: key.slot })
+      .filter((lesson) => !(lesson.cohortId === key.cohortId && lesson.streamId === key.streamId))
+
+    const occupancy: SlotOccupancy = { lecturers: [], rooms: [] }
+    for (const lesson of others) {
+      lesson.parts.forEach((part, partIndex) => {
+        const location: LessonLocation = {
+          facultyId: lesson.facultyId,
+          facultyName: lesson.facultyName,
+          cohortId: lesson.cohortId,
+          cohortName: lesson.cohortName,
+          streamId: lesson.streamId,
+          streamName: lesson.streamName,
+          partIndex,
+          partsCount: lesson.parts.length,
+        }
+        const base = { partIndex, partsCount: lesson.parts.length, location }
+        part.lecturers.forEach((name) => occupancy.lecturers.push({ ...base, name }))
+        if (normalizeName(lesson.building) === building) {
+          part.rooms.forEach((name) => occupancy.rooms.push({ ...base, name }))
+        }
+      })
+    }
+    return occupancy
+  }
+
   checkConflicts(input: SaveLessonInput): ScheduleConflict[] {
     if (isEmptyLesson(input.parts)) return []
     const { cohort, faculty } = this.getCohortContext(input.cohortId)
@@ -81,8 +124,9 @@ export class LessonsService {
   }
 
   /**
-   * Պահպանում է դասը։ Զբաղված լսարանի դեպքում միշտ վերադարձնում է 409 (ROOM_OCCUPIED)։
-   * Մյուս բախումների դեպքում՝ 409 (CONFLICT), եթե օգտատերը չի հաստատել (force)։
+   * Պահպանում է դասը։ Ցանկացած բախման դեպքում (դասախոսը կամ լսարանը նույն ժամին
+   * այլ տեղում, կամ կրկնություն նույն վանդակի մասերում) վերադարձնում է 409, և
+   * շրջանցելու հնարավորություն չկա։
    */
   save(user: AuthUser, input: SaveLessonInput): SaveLessonResult {
     const { cohort, faculty } = this.getCohortContext(input.cohortId)
@@ -94,12 +138,8 @@ export class LessonsService {
     }
 
     const conflicts = this.checkConflicts(input)
-    // Զբաղված լսարանը (մեկ այլ դասում նույն մասնաշենքում) արգելվում է անվերապահորեն
-    const occupiedRooms = conflicts.filter((item) => item.kind === 'room' && !item.isInternal)
-    if (occupiedRooms.length > 0) throw roomOccupied({ conflicts: occupiedRooms })
-    // Դասախոսի բախումը և ներքին կրկնությունը՝ զգուշացում, որը կարելի է հաստատել
-    if (conflicts.length > 0 && !input.force) {
-      throw conflict('Հայտնաբերվել են բախումներ', { conflicts })
+    if (conflicts.length > 0) {
+      throw conflict('Դասախոսը կամ լսարանը այդ ժամին արդեն զբաղված է։ Ընտրեք այլ տարբերակ։', { conflicts })
     }
 
     return this.db.transaction(() => {

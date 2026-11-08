@@ -47,7 +47,7 @@ export const ScheduleEditorPage = () => {
       if (!cohortId) return
       try {
         if (parts) {
-          const result = await scheduleRequests.saveLesson(cohortId, { ...key, parts, force: true })
+          const result = await scheduleRequests.saveLesson(cohortId, { ...key, parts })
           applyLesson(key, result.lesson)
         } else {
           await scheduleRequests.deleteLesson(cohortId, key)

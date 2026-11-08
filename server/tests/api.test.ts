@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, it } from 'node:test'
 import { APP_CONFIG } from '../src/config/app.config.ts'
 import { createApp } from '../src/app.ts'
+import type { Database } from '../src/core/database/database.ts'
 
 /**
  * API-ի ինտեգրացիոն թեստեր՝ ժամանակավոր (in-memory) բազայով։
@@ -11,6 +12,7 @@ import { createApp } from '../src/app.ts'
 const SUPER_PASSWORD = 'SuperSecret123'
 let baseUrl = ''
 let closeApp: () => Promise<void>
+let appDb: Database
 
 interface ApiResponse<T = any> {
   status: number
@@ -58,6 +60,7 @@ before(async () => {
   })
   console.log = originalLog
   console.table = originalTable
+  appDb = db
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
   closeApp = () =>
@@ -159,14 +162,34 @@ describe('Դասեր և բախումներ', () => {
     assert.equal(schedule.lessons[0].parts[0].subject, 'Բանկային գործ')
   })
 
-  it('հայտնաբերում է նույն դասախոսի բախումը այլ ֆակուլտետում (409), իսկ force-ով պահպանում է', async () => {
+  it('նույն դասախոսը նույն ժամին այլ ֆակուլտետում արգելվում է, նույնիսկ force-ով', async () => {
     const body = { day: 'monday', slot: '1-2', streamId: 'stream-2', parts: [lesson('Մենեջմենթ', ['Սարգսյան Արամ'], ['305'])] }
     const blocked = await api('PUT', `/cohorts/${managementCohortId}/lessons`, { token: managementToken, body })
     assert.equal(blocked.status, 409)
     assert.equal(blocked.body.details.conflicts[0].kind, 'lecturer')
 
     const forced = await api('PUT', `/cohorts/${managementCohortId}/lessons`, { token: managementToken, body: { ...body, force: true } })
-    assert.equal(forced.status, 200)
+    assert.equal(forced.status, 409, 'բախումը շրջանցելու հնարավորություն չպետք է լինի')
+
+    const otherTime = await api('PUT', `/cohorts/${managementCohortId}/lessons`, {
+      token: managementToken,
+      body: { ...body, slot: '3-4' },
+    })
+    assert.equal(otherTime.status, 200, 'այլ ժամին նույն դասախոսը ազատ է')
+  })
+
+  it('զբաղվածության ցուցակը ցույց է տալիս զբաղված դասախոսներին (ամբողջ համալսարան) և լսարանները (միայն նույն մասնաշենք)', async () => {
+    const query = '?day=monday&slot=1-2&streamId=stream-2'
+    const finance = (await api('GET', `/cohorts/${financeCohortId}/occupancy${query}`, { token: financeToken })).body
+    assert.ok(finance.lecturers.some((o: any) => o.name === 'Սարգսյան Արամ' && o.location.streamId === 'stream-1'))
+    assert.ok(finance.rooms.some((o: any) => o.name === '201'))
+
+    const management = (await api('GET', `/cohorts/${managementCohortId}/occupancy${query}`, { token: managementToken })).body
+    assert.ok(management.lecturers.some((o: any) => o.name === 'Սարգսյան Արամ'), 'դասախոսը զբաղված է ամբողջ համալսարանում')
+    assert.ok(!management.rooms.some((o: any) => o.name === '201'), 'այլ ֆակուլտետի լսարանը չի ազդում')
+
+    const own = (await api('GET', `/cohorts/${financeCohortId}/occupancy?day=monday&slot=1-2&streamId=stream-1`, { token: financeToken })).body
+    assert.ok(!own.lecturers.some((o: any) => o.location.streamId === 'stream-1' && o.location.cohortId === financeCohortId), 'խմբագրվող վանդակը չի հաշվվում')
   })
 
   it('համարիչն ու հայտարարը չեն բախվում միմյանց հետ', async () => {
@@ -200,18 +223,19 @@ describe('Դասեր և բախումներ', () => {
     assert.equal(check.body.length, 1)
   })
 
-  it('նույն վանդակում նույն դասախոսը երկու մասում նշվում է որպես ներքին բախում', async () => {
-    const check = await api('POST', `/cohorts/${financeCohortId}/lessons/check`, {
-      token: financeToken,
-      body: {
-        day: 'wednesday',
-        slot: '1-2',
-        streamId: 'stream-1',
-        parts: [lesson('Աուդիտ', ['Գրիգորյան Լիլիթ'], []), lesson('Աուդիտ', ['Գրիգորյան Լիլիթ'], [])],
-      },
-    })
-    assert.equal(check.body.length, 1)
-    assert.equal(check.body[0].isInternal, true)
+  it('նույն վանդակի համարիչում և հայտարարում նույն դասախոսը կամ լսարանը արգելվում է', async () => {
+    const body = {
+      day: 'wednesday',
+      slot: '1-2',
+      streamId: 'stream-1',
+      parts: [lesson('Աուդիտ', ['Գրիգորյան Լիլիթ'], ['101']), lesson('Աուդիտ', ['Գրիգորյան Լիլիթ'], ['101'])],
+    }
+    const check = await api('POST', `/cohorts/${financeCohortId}/lessons/check`, { token: financeToken, body })
+    assert.equal(check.body.length, 2)
+    assert.ok(check.body.every((conflict: any) => conflict.isInternal))
+
+    const saved = await api('PUT', `/cohorts/${financeCohortId}/lessons`, { token: financeToken, body: { ...body, force: true } })
+    assert.equal(saved.status, 409)
   })
 
   it('մերժում է աղյուսակից դուրս վանդակը', async () => {
@@ -252,7 +276,7 @@ describe('Դասեր և բախումներ', () => {
       body: { day: 'monday', slot: '1-2', streamId: 'stream-3', parts: [lesson('Աուդիտ', [], ['201'])], force: true },
     })
     assert.equal(status, 409)
-    assert.equal(body.code, 'ROOM_OCCUPIED')
+    assert.equal(body.code, 'CONFLICT')
   })
 
   it('ձեռքով նշված զբաղված լսարանը նույնպես արգելվում է', async () => {
@@ -261,7 +285,7 @@ describe('Դասեր և բախումներ', () => {
       body: { day: 'thursday', slot: '5-6', streamId: 'stream-1', parts: [lesson('Աուդիտ', [], ['999'])], force: true },
     })
     assert.equal(status, 409)
-    assert.equal(body.code, 'ROOM_OCCUPIED')
+    assert.equal(body.code, 'CONFLICT')
   })
 
   it('տարբեր ֆակուլտետների նույն համարով լսարանները չեն բախվում (առանձին մասնաշենքեր)', async () => {
@@ -305,7 +329,15 @@ describe('Հաշվետվություններ', () => {
     assert.equal(room201.isFree, false)
   })
 
-  it('համալսարանային բախումների հաշվետվությունը ներառում է ստիպողաբար պահպանված բախումը', async () => {
+  it('համալսարանային բախումների հաշվետվությունը գտնում է ներմուծված (հին) տվյալների բախումները', async () => {
+    // Բախում կարող է առաջանալ միայն հին տվյալներ ներմուծելիս, ուստի այն ավելացնում ենք ուղղակի բազայում
+    appDb.run(
+      `INSERT INTO lessons (id, cohort_id, day, slot, stream_id, parts, updated_at, updated_by)
+       VALUES ('imported-conflict', ?, 'monday', '1-2', 'stream-4', ?, ?, NULL)`,
+      managementCohortId,
+      JSON.stringify([lesson('Ներմուծված դաս', ['Սարգսյան Արամ'], [])]),
+      new Date().toISOString(),
+    )
     const { body } = await api('GET', '/reports/conflicts', { token: superToken })
     assert.ok(body.some((conflict: any) => conflict.name === 'Սարգսյան Արամ'))
   })

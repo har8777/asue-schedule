@@ -1,5 +1,5 @@
 import { DAY_KEYS, partLabel, SLOT_KEYS, SLOTS_PER_DAY, type DayKey, type SlotKey } from './schedule.constants'
-import type { Cohort, CohortSettings, Lesson, LessonKey, LessonLocation, LessonPart } from './schedule.types'
+import type { Cohort, CohortSettings, Lesson, LessonKey, LessonLocation, LessonPart, Occupant } from './schedule.types'
 
 export const lessonKeyId = ({ day, slot, streamId }: LessonKey): string => `${day}|${slot}|${streamId}`
 
@@ -54,3 +54,40 @@ export const formatParts = (parts: LessonPart[] | null): string => {
 
 export const sortCohorts = (cohorts: Cohort[]): Cohort[] =>
   [...cohorts].sort((a, b) => (a.kind === b.kind ? a.sortOrder - b.sortOrder : a.kind === 'year' ? -1 : 1))
+
+const normalizeName = (name: string): string => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('hy')
+
+/**
+ * Դասախոսի կամ լսարանի ընտրության տարբերակներ դասի կոնկրետ մասի համար։
+ * Տարբերակը ոչ ակտիվ է, եթե՝
+ * - նույն ժամին զբաղված է այլ վանդակում/ֆակուլտետում (ամբողջական դասը զբաղեցնում է երկու կեսն էլ),
+ * - արդեն նշված է նույն վանդակի մյուս մասում։
+ */
+export const buildResourceOptions = (
+  catalogNames: string[],
+  occupants: Occupant[],
+  parts: LessonPart[],
+  partIndex: number,
+  field: 'lecturers' | 'rooms',
+): { value: string; disabledReason?: string }[] => {
+  const partsCount = parts.length
+  const names = new Map<string, string>()
+  for (const name of [...catalogNames, ...occupants.map((occupant) => occupant.name)]) {
+    if (!names.has(normalizeName(name))) names.set(normalizeName(name), name)
+  }
+
+  return [...names.entries()].map(([key, value]) => {
+    const busy = occupants.find(
+      (occupant) =>
+        normalizeName(occupant.name) === key &&
+        (occupant.partsCount === 1 || partsCount === 1 || occupant.partIndex === partIndex),
+    )
+    if (busy) return { value, disabledReason: `զբաղված է՝ ${formatLocation(busy.location)}` }
+
+    const otherPart = parts.findIndex(
+      (part, index) => index !== partIndex && part[field].some((item) => normalizeName(item) === key),
+    )
+    if (otherPart >= 0) return { value, disabledReason: `արդեն նշված է «${partLabel(otherPart)}»-ում` }
+    return { value }
+  })
+}
