@@ -8,12 +8,16 @@ import type {
   SaveLessonPayload,
   SaveLessonResult,
   ScheduleConflict,
+  SlotOccupancy,
   UpdateCohortResult,
 } from './schedule.types'
 
 export const scheduleRequests = {
   getSchedule: async (cohortId: string): Promise<CohortSchedule> =>
     (await httpClient.get<CohortSchedule>(`/cohorts/${cohortId}/schedule`)).data,
+
+  getOccupancy: async (cohortId: string, key: LessonKey): Promise<SlotOccupancy> =>
+    (await httpClient.get<SlotOccupancy>(`/cohorts/${cohortId}/occupancy`, { params: key })).data,
 
   checkConflicts: async (cohortId: string, payload: SaveLessonPayload): Promise<ScheduleConflict[]> =>
     (await httpClient.post<ScheduleConflict[]>(`/cohorts/${cohortId}/lessons/check`, payload)).data,

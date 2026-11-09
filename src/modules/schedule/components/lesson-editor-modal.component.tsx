@@ -4,16 +4,19 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import type { FacultyCatalog } from '../../catalog/catalog.types'
 import { Button } from '../../common/components/button.component'
 import { useConfirm } from '../../common/components/confirm.context'
-import { FormField, SegmentedControl, TextInput } from '../../common/components/form-controls.component'
+import { ComboboxInput } from '../../common/components/combobox-input.component'
+import { FormField, SegmentedControl } from '../../common/components/form-controls.component'
 import { Modal } from '../../common/components/modal.component'
 import { TagInput } from '../../common/components/tag-input.component'
 import { useToast } from '../../common/components/toast.context'
-import { getApiError, getErrorMessage } from '../../common/http/http-error'
+import { useAsyncData } from '../../common/hooks/use-async-data'
+import { getErrorMessage } from '../../common/http/http-error'
 import { useConflictCheck } from '../hooks/use-conflict-check'
 import { DAY_LABELS, MAX_LESSON_PARTS, partLabel } from '../schedule.constants'
 import { scheduleRequests } from '../schedule.requests'
-import type { Cohort, Lesson, LessonKey, LessonPart, ScheduleConflict } from '../schedule.types'
-import { ConflictList, isBlockingConflict } from './conflict-list.component'
+import type { Cohort, Lesson, LessonKey, LessonPart, SlotOccupancy } from '../schedule.types'
+import { buildResourceOptions } from '../schedule.utils'
+import { ConflictList } from './conflict-list.component'
 
 type LessonMode = 'single' | 'split'
 
@@ -37,6 +40,7 @@ interface LessonEditorModalProps {
 }
 
 const EMPTY_PART: LessonPart = { subject: '', lecturers: [], rooms: [] }
+const EMPTY_OCCUPANCY: SlotOccupancy = { lecturers: [], rooms: [] }
 
 const toFormValues = (lesson: Lesson | undefined): LessonFormValues => {
   const parts = lesson?.parts.length ? lesson.parts : [EMPTY_PART]
@@ -53,7 +57,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
   const toast = useToast()
   const confirm = useConfirm()
   const [isDeleting, setIsDeleting] = useState(false)
-  const { control, register, handleSubmit, reset, setValue, setError, formState } = useForm<LessonFormValues>({
+  const { control, handleSubmit, reset, setValue, setError, formState } = useForm<LessonFormValues>({
     defaultValues: toFormValues(undefined),
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'parts' })
@@ -65,8 +69,13 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
   }, [target, reset])
 
   const { conflicts, isChecking } = useConflictCheck(cohort.id, target?.key ?? null, cleanParts(watchedParts))
+  // Նույն ժամին զբաղված դասախոսներ/լսարաններ. ցուցակում դրանք ոչ ակտիվ են
+  const { data: occupancy } = useAsyncData(
+    () => (target ? scheduleRequests.getOccupancy(cohort.id, target.key) : Promise.resolve(EMPTY_OCCUPANCY)),
+    [cohort.id, target],
+  )
 
-  const suggestions = useMemo(
+  const catalogNames = useMemo(
     () => ({
       subjects: catalog.subjects.map((item) => item.name),
       lecturers: catalog.lecturers.map((item) => item.name),
@@ -78,7 +87,8 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
   if (!target) return null
   const { key, lesson } = target
   const stream = cohort.settings.streams.find((item) => item.id === key.streamId)
-  const hasBlockingConflict = conflicts.some(isBlockingConflict)
+  const hasConflicts = conflicts.length > 0
+  const currentParts = cleanParts(watchedParts)
 
   const changeMode = (nextMode: LessonMode) => {
     setValue('mode', nextMode)
@@ -86,36 +96,14 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
     if (nextMode === 'single' && fields.length > 1) remove(fields.map((_, index) => index).slice(1))
   }
 
-  const confirmConflicts = (found: ScheduleConflict[]) =>
-    confirm({
-      title: 'Հայտնաբերվել են բախումներ',
-      isDanger: true,
-      confirmText: 'Պահպանել միևնույն է',
-      message: (
-        <div className="flex flex-col gap-3">
-          <p>Նույն ժամին նույն դասախոսը կամ լսարանը արդեն զբաղված է։ Ցանկանո՞ւմ եք պահպանել։</p>
-          <ConflictList conflicts={found} current={{ cohortId: cohort.id, streamId: key.streamId }} />
-        </div>
-      ),
-    })
-
-  const save = async (parts: LessonPart[], force: boolean): Promise<void> => {
+  /** Բախումներով դասը սերվերը մերժում է. պատուհանը մնում է բաց, և բախումները երևում են ներքևում։ */
+  const save = async (parts: LessonPart[]): Promise<void> => {
     try {
-      const result = await scheduleRequests.saveLesson(cohort.id, { ...key, parts, force })
+      const result = await scheduleRequests.saveLesson(cohort.id, { ...key, parts })
       onChanged(key, lesson?.parts ?? null, result.lesson)
-      toast.success(force ? 'Պահպանվեց (բախումներով)' : 'Դասը պահպանվեց')
+      toast.success('Դասը պահպանվեց')
       onClose()
     } catch (error) {
-      const apiError = getApiError<{ conflicts: ScheduleConflict[] }>(error)
-      if (apiError?.code === 'ROOM_OCCUPIED') {
-        // Զբաղված լսարանը հնարավոր չէ հաստատել. միայն տեղեկացնում ենք
-        toast.error(apiError.message)
-        return
-      }
-      if (apiError?.code === 'CONFLICT' && apiError.details?.conflicts && !force) {
-        if (await confirmConflicts(apiError.details.conflicts)) await save(parts, true)
-        return
-      }
       toast.error(getErrorMessage(error))
     }
   }
@@ -126,7 +114,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
       setError('parts.0.subject', { message: 'Լրացրեք առնվազն մեկ առարկա կամ ջնջեք դասը' })
       return
     }
-    await save(parts, false)
+    await save(parts)
   }
 
   const deleteLesson = async () => {
@@ -177,8 +165,8 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
             type="submit"
             form="lesson-editor-form"
             isLoading={formState.isSubmitting}
-            disabled={hasBlockingConflict}
-            title={hasBlockingConflict ? 'Լսարանը զբաղված է' : undefined}
+            disabled={hasConflicts}
+            title={hasConflicts ? 'Ուղղեք բախումները՝ պահպանելու համար' : undefined}
           >
             Պահպանել
           </Button>
@@ -219,15 +207,27 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
                 </legend>
               )}
               <FormField label="Առարկա" error={formState.errors.parts?.[index]?.subject?.message}>
-                <TextInput
-                  list="lesson-subjects"
-                  placeholder="Ընտրեք կամ գրեք առարկան"
-                  autoComplete="off"
-                  {...register(`parts.${index}.subject`)}
+                <Controller
+                  control={control}
+                  name={`parts.${index}.subject`}
+                  render={({ field: subjectField }) => (
+                    <ComboboxInput
+                      ref={subjectField.ref}
+                      value={subjectField.value}
+                      onChange={subjectField.onChange}
+                      onBlur={subjectField.onBlur}
+                      options={catalogNames.subjects}
+                      placeholder="Ընտրեք կամ գրեք առարկան"
+                      hasError={Boolean(formState.errors.parts?.[index]?.subject)}
+                    />
+                  )}
                 />
               </FormField>
               <div className="grid gap-3 sm:grid-cols-2">
-                <FormField label="Դասախոս(ներ)" hint={hasSubject ? 'Enter՝ ավելացնելու համար' : 'Նախ ընտրեք առարկան'}>
+                <FormField
+                  label="Դասախոս(ներ)"
+                  hint={hasSubject ? 'Զբաղվածները ցուցակում ոչ ակտիվ են' : 'Նախ ընտրեք առարկան'}
+                >
                   <Controller
                     control={control}
                     name={`parts.${index}.lecturers`}
@@ -235,7 +235,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
                       <TagInput
                         value={tagField.value}
                         onChange={tagField.onChange}
-                        suggestions={suggestions.lecturers}
+                        options={buildResourceOptions(catalogNames.lecturers, occupancy?.lecturers ?? [], currentParts, index, 'lecturers')}
                         placeholder="Դասախոս"
                         disabled={!hasSubject}
                       />
@@ -250,7 +250,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
                       <TagInput
                         value={tagField.value}
                         onChange={tagField.onChange}
-                        suggestions={suggestions.rooms}
+                        options={buildResourceOptions(catalogNames.rooms, occupancy?.rooms ?? [], currentParts, index, 'rooms')}
                         placeholder="Լսարան"
                         disabled={!hasSubject}
                         unknownLabel="ժամանակավոր"
@@ -269,11 +269,6 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
           </Button>
         )}
 
-        <datalist id="lesson-subjects">
-          {suggestions.subjects.map((subject) => (
-            <option key={subject} value={subject} />
-          ))}
-        </datalist>
 
         {isChecking && (
           <p className="flex items-center gap-2 text-xs text-slate-400">

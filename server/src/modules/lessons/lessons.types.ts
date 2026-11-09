@@ -60,5 +60,17 @@ export interface ScheduleConflict {
 
 export interface SaveLessonInput extends LessonKey {
   parts: LessonPart[]
-  force: boolean
+}
+
+/** Ով է զբաղեցնում դասախոսին կամ լսարանը տվյալ ժամին (խմբագրիչում ոչ ակտիվ տարբերակների համար)։ */
+export interface Occupant {
+  name: string
+  partIndex: number
+  partsCount: number
+  location: LessonLocation
+}
+
+export interface SlotOccupancy {
+  lecturers: Occupant[]
+  rooms: Occupant[]
 }

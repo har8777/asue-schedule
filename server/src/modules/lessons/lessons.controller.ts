@@ -7,6 +7,12 @@ import { parseLessonKey, parseSaveLessonInput } from './lessons.validation.ts'
 export const createLessonsController = (lessonsService: LessonsService, guards: AuthGuards): Router =>
   new Router('/cohorts/:cohortId')
     .get('/schedule', (ctx) => lessonsService.getSchedule(ctx.params.cohortId))
+    .get('/occupancy', guards.authenticate, (ctx) => {
+      const { cohort } = lessonsService.getCohortContext(ctx.params.cohortId)
+      return lessonsService.getOccupancy(
+        parseLessonKey(cohort, { day: ctx.query.get('day'), slot: ctx.query.get('slot'), streamId: ctx.query.get('streamId') }),
+      )
+    })
     .post('/lessons/check', guards.authenticate, (ctx) => {
       const { cohort } = lessonsService.getCohortContext(ctx.params.cohortId)
       return lessonsService.checkConflicts(parseSaveLessonInput(cohort, ctx.body))

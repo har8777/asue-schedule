@@ -28,8 +28,4 @@ export const notFound = (message = 'Չի գտնվել') => new HttpError(404, 'N
 export const conflict = (message: string, details?: unknown) =>
   new HttpError(409, 'CONFLICT', message, details)
 
-/** Լսարանը զբաղված է. այս բախումը հնարավոր չէ շրջանցել «force»-ով։ */
-export const roomOccupied = (details: unknown) =>
-  new HttpError(409, 'ROOM_OCCUPIED', 'Լսարանը զբաղված է այդ ժամին։ Ընտրեք այլ լսարան։', details)
-
 export const tooManyRequests = (message: string) => new HttpError(429, 'TOO_MANY_REQUESTS', message)

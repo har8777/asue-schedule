@@ -5,7 +5,7 @@ import { APP_ROUTES } from '../../../app/app.routes'
 import { catalogRequests } from '../../catalog/catalog.requests'
 import { Button } from '../../common/components/button.component'
 import { EmptyState, ErrorState, PageLoader } from '../../common/components/feedback.component'
-import { TextInput } from '../../common/components/form-controls.component'
+import { ComboboxInput } from '../../common/components/combobox-input.component'
 import { PageHeader } from '../../common/components/page-header.component'
 import { useAsyncData } from '../../common/hooks/use-async-data'
 import { useDocumentTitle } from '../../common/hooks/use-document-title'
@@ -69,22 +69,16 @@ export const LecturerSchedulePage = () => {
       >
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-3 left-3 size-4 text-slate-400" />
-          <TextInput
-            list="all-lecturers"
+          <ComboboxInput
             value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value)
-              if (lecturers.data?.includes(event.target.value)) submit(event.target.value)
+            onChange={(next) => {
+              setDraft(next)
+              if (lecturers.data?.includes(next)) submit(next)
             }}
+            options={lecturers.data ?? []}
             placeholder="Դասախոսի անուն-ազգանուն"
             className="pl-9"
-            aria-label="Դասախոս"
           />
-          <datalist id="all-lecturers">
-            {lecturers.data?.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
         </div>
         <Button type="submit">Ցույց տալ</Button>
       </form>

@@ -1,6 +1,6 @@
 import { badRequest } from '../../core/http/http-error.ts'
 import { normalizeName } from '../../core/utils/id.ts'
-import { asRecord, optionalBoolean, requireArray, requireOneOf, requireString, stringList } from '../../core/validation/validators.ts'
+import { asRecord, requireArray, requireOneOf, requireString, stringList } from '../../core/validation/validators.ts'
 import type { Cohort } from '../cohorts/cohorts.types.ts'
 import {
   buildDaySlots,
@@ -61,6 +61,5 @@ export const parseSaveLessonInput = (cohort: Cohort, body: unknown): SaveLessonI
   return {
     ...parseLessonKey(cohort, { day: record.day, slot: record.slot, streamId: record.streamId }),
     parts: parseLessonParts(record.parts),
-    force: optionalBoolean(record.force, 'force') ?? false,
   }
 }
