@@ -34,6 +34,7 @@ import { SettingsService } from './modules/settings/settings.service.ts'
 import { createUsersController } from './modules/users/users.controller.ts'
 import { UsersRepository } from './modules/users/users.repository.ts'
 import { UsersService } from './modules/users/users.service.ts'
+import { DATA_MIGRATIONS } from './seed/data-migrations.ts'
 import { seedDatabase } from './seed/seed.service.ts'
 
 type AppConfig = typeof APP_CONFIG
@@ -53,7 +54,7 @@ const resolveJwtSecret = (config: AppConfig, settings: SettingsRepository): stri
  */
 export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const db = new Database(config.databaseFile)
-  runMigrations(db)
+  runMigrations(db, DATA_MIGRATIONS)
 
   // Repository-ներ
   const settingsRepository = new SettingsRepository(db)
