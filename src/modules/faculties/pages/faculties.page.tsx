@@ -5,7 +5,7 @@ import { ErrorState, PageLoader } from '../../common/components/feedback.compone
 import { useDocumentTitle } from '../../common/hooks/use-document-title'
 import { localStore, STORAGE_KEYS } from '../../common/storage/local-storage'
 import { cn } from '../../common/utils/classnames'
-import { sortCohorts } from '../../schedule/schedule.utils'
+import { groupCohorts } from '../faculties.utils'
 import { useSettings } from '../../settings/settings.context'
 import { useFaculties } from '../hooks/use-faculties'
 
@@ -61,22 +61,36 @@ export const FacultiesPage = () => {
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100">
                 <Building2 className="size-5" />
               </span>
-              <h2 className="pt-0.5 leading-snug font-bold">{faculty.name}</h2>
+              <div className="pt-0.5">
+                <h2 className="leading-snug font-bold">{faculty.name}</h2>
+                {faculty.dean && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Դեկան՝ {faculty.dean}</p>}
+              </div>
             </div>
-            <div className="mt-auto flex flex-wrap gap-2">
-              {sortCohorts(faculty.cohorts).map((cohort) => (
-                <Link
-                  key={cohort.id}
-                  to={APP_ROUTES.schedule(cohort.id)}
-                  className={cn(
-                    'rounded-lg px-3 py-2 text-xs font-bold transition-colors',
-                    cohort.kind === 'program'
-                      ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      : 'bg-slate-100 text-slate-700 hover:bg-brand-600 hover:text-white dark:bg-slate-800 dark:text-slate-200',
+            <div className="mt-auto flex flex-col gap-3">
+              {groupCohorts(faculty).map((group) => (
+                <div key={group.division?.id ?? 'main'}>
+                  {group.division && (
+                    <p className="mb-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      {group.division.name}
+                    </p>
                   )}
-                >
-                  {cohort.name}
-                </Link>
+                  <div className="flex flex-wrap gap-2">
+                    {group.cohorts.map((cohort) => (
+                      <Link
+                        key={cohort.id}
+                        to={APP_ROUTES.schedule(cohort.id)}
+                        className={cn(
+                          'rounded-lg px-3 py-2 text-xs font-bold transition-colors',
+                          cohort.kind === 'program'
+                            ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : 'bg-slate-100 text-slate-700 hover:bg-brand-600 hover:text-white dark:bg-slate-800 dark:text-slate-200',
+                        )}
+                      >
+                        {cohort.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </article>

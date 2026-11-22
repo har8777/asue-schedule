@@ -15,9 +15,9 @@ export const HOURS_PER_ENTRY = 2
 /** Մեկ շաբաթական մուտքին համապատասխանող կիսամյակային ժամաքանակը (2 × 16)։ */
 export const HOURS_PER_WEEKLY_ENTRY = HOURS_PER_ENTRY * WEEKS_PER_SEMESTER
 
-/** Ժամաքանակը պետք է լինի 16-ի պատիկ, որպեսզի մուտքերը լինեն 0,5-ի պատիկ։ */
+/** 16-ի պատիկները տալիս են ամբողջ կամ կես մուտք. ձեռքով կարելի է գրել ցանկացած արժեք։ */
 export const HOURS_STEP = HOURS_PER_WEEKLY_ENTRY / 2
-export const MIN_SUBJECT_HOURS = HOURS_STEP
+export const MIN_SUBJECT_HOURS = 1
 export const MAX_SUBJECT_HOURS = 320
 export const MAX_PLAN_SUBJECTS = 80
 

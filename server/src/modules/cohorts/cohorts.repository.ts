@@ -5,6 +5,7 @@ import type { Cohort, CohortKind, CohortSettings } from './cohorts.types.ts'
 interface CohortRow {
   id: string
   faculty_id: string
+  division_id: string | null
   name: string
   kind: CohortKind
   sort_order: number
@@ -23,6 +24,7 @@ const parseSettings = (raw: string): CohortSettings => {
 const toCohort = (row: CohortRow): Cohort => ({
   id: row.id,
   facultyId: row.faculty_id,
+  divisionId: row.division_id,
   name: row.name,
   kind: row.kind,
   sortOrder: row.sort_order,
@@ -66,9 +68,10 @@ export class CohortsRepository {
 
   insert(cohort: Cohort): void {
     this.db.run(
-      'INSERT INTO cohorts (id, faculty_id, name, kind, sort_order, is_published, settings) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO cohorts (id, faculty_id, division_id, name, kind, sort_order, is_published, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       cohort.id,
       cohort.facultyId,
+      cohort.divisionId,
       cohort.name,
       cohort.kind,
       cohort.sortOrder,
@@ -79,7 +82,8 @@ export class CohortsRepository {
 
   update(cohort: Cohort): void {
     this.db.run(
-      'UPDATE cohorts SET name = ?, kind = ?, sort_order = ?, is_published = ?, settings = ? WHERE id = ?',
+      'UPDATE cohorts SET division_id = ?, name = ?, kind = ?, sort_order = ?, is_published = ?, settings = ? WHERE id = ?',
+      cohort.divisionId,
       cohort.name,
       cohort.kind,
       cohort.sortOrder,

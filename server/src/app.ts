@@ -23,6 +23,9 @@ import { CohortsService } from './modules/cohorts/cohorts.service.ts'
 import { createCurriculumController } from './modules/curriculum/curriculum.controller.ts'
 import { CurriculumRepository } from './modules/curriculum/curriculum.repository.ts'
 import { CurriculumService } from './modules/curriculum/curriculum.service.ts'
+import { createDivisionsController } from './modules/divisions/divisions.controller.ts'
+import { DivisionsRepository } from './modules/divisions/divisions.repository.ts'
+import { DivisionsService } from './modules/divisions/divisions.service.ts'
 import { createFacultiesController } from './modules/faculties/faculties.controller.ts'
 import { FacultiesRepository } from './modules/faculties/faculties.repository.ts'
 import { FacultiesService } from './modules/faculties/faculties.service.ts'
@@ -68,6 +71,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const usersRepository = new UsersRepository(db)
   const changeLogRepository = new ChangeLogRepository(db)
   const curriculumRepository = new CurriculumRepository(db)
+  const divisionsRepository = new DivisionsRepository(db)
 
   // Ծառայություններ
   const jwt = new JwtService(resolveJwtSecret(config, settingsRepository), config.jwtTtlSeconds)
@@ -75,7 +79,15 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const usersService = new UsersService(usersRepository, facultiesRepository)
   const authService = new AuthService(usersRepository, usersService, jwt)
   const catalogService = new CatalogService(catalogRepository, facultiesRepository)
-  const facultiesService = new FacultiesService(db, facultiesRepository, cohortsRepository, lessonsRepository, changeLogRepository)
+  const divisionsService = new DivisionsService(db, divisionsRepository, facultiesRepository, cohortsRepository)
+  const facultiesService = new FacultiesService(
+    db,
+    facultiesRepository,
+    cohortsRepository,
+    divisionsRepository,
+    lessonsRepository,
+    changeLogRepository,
+  )
   const cohortsService = new CohortsService(db, cohortsRepository, facultiesRepository, lessonsRepository, changeLogRepository)
   const curriculumService = new CurriculumService(
     db,
@@ -89,6 +101,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
     lessonsRepository,
     cohortsRepository,
     facultiesRepository,
+    divisionsRepository,
     catalogService,
     curriculumService,
     changeLogRepository,
@@ -126,6 +139,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
     .use(createUsersController(usersService, guards))
     .use(createSettingsController(settingsService, guards))
     .use(createFacultiesController(facultiesService, guards))
+    .use(createDivisionsController(divisionsService, guards))
     .use(createCohortsController(cohortsService, guards))
     .use(createLessonsController(lessonsService, guards))
     .use(createCurriculumController(curriculumService, guards))

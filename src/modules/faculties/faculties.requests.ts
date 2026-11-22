@@ -1,5 +1,5 @@
 import { httpClient } from '../common/http/http-client'
-import type { FacultyPayload, FacultyWithCohorts } from './faculties.types'
+import type { DivisionPayload, FacultyDivision, FacultyPayload, FacultyWithCohorts } from './faculties.types'
 
 export const facultiesRequests = {
   list: async (): Promise<FacultyWithCohorts[]> => (await httpClient.get<FacultyWithCohorts[]>('/faculties')).data,
@@ -29,4 +29,18 @@ export const facultiesRequests = {
 
   draftsCount: async (): Promise<{ faculties: number; cohorts: number }> =>
     (await httpClient.get<{ faculties: number; cohorts: number }>('/faculties/drafts/count')).data,
+
+  /** Կցում է նոր բաժին գոյություն ունեցող ֆակուլտետին (օր.՝ «Հեռակա»)։ */
+  createDivision: async (facultyId: string, payload: DivisionPayload): Promise<FacultyDivision> =>
+    (await httpClient.post<FacultyDivision>(`/faculties/${facultyId}/divisions`, payload)).data,
+
+  updateDivision: async (id: string, payload: Partial<DivisionPayload>): Promise<FacultyDivision> =>
+    (await httpClient.patch<FacultyDivision>(`/divisions/${id}`, payload)).data,
+
+  setDivisionPublished: async (id: string, isPublished: boolean): Promise<FacultyDivision> =>
+    (await httpClient.post<FacultyDivision>(`/divisions/${id}/${isPublished ? 'publish' : 'unpublish'}`)).data,
+
+  removeDivision: async (id: string): Promise<void> => {
+    await httpClient.delete(`/divisions/${id}`)
+  },
 }

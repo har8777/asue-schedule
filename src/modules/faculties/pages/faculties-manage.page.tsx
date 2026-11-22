@@ -1,81 +1,17 @@
 import { Eraser, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
 import { Button } from '../../common/components/button.component'
 import { useConfirm } from '../../common/components/confirm.context'
 import { ErrorState, PageLoader } from '../../common/components/feedback.component'
-import { FormField, TextInput } from '../../common/components/form-controls.component'
-import { Modal } from '../../common/components/modal.component'
 import { Badge, PageHeader } from '../../common/components/page-header.component'
 import { useToast } from '../../common/components/toast.context'
 import { useDocumentTitle } from '../../common/hooks/use-document-title'
 import { getErrorMessage } from '../../common/http/http-error'
 import { facultiesRequests } from '../faculties.requests'
-import type { FacultyPayload, FacultyWithCohorts } from '../faculties.types'
+import type { FacultyWithCohorts } from '../faculties.types'
 import { useFaculties } from '../hooks/use-faculties'
+import { FacultyFormModal } from '../components/faculty-form-modal.component'
 import { PublishBanner } from '../components/publish-banner.component'
-
-interface FacultyFormModalProps {
-  isOpen: boolean
-  faculty: FacultyWithCohorts | null
-  onClose: () => void
-  onSaved: () => void
-}
-
-const FacultyFormModal = ({ isOpen, faculty, onClose, onSaved }: FacultyFormModalProps) => {
-  const toast = useToast()
-  const { register, handleSubmit, reset, formState } = useForm<FacultyPayload>()
-
-  useEffect(() => {
-    if (isOpen) reset({ name: faculty?.name ?? '', shortName: faculty?.shortName ?? '', building: faculty?.building ?? '' })
-  }, [isOpen, faculty, reset])
-
-  const onSubmit = async (values: FacultyPayload) => {
-    const payload = { name: values.name.trim(), shortName: values.shortName.trim(), building: values.building.trim() }
-    try {
-      if (faculty) await facultiesRequests.update(faculty.id, payload)
-      else await facultiesRequests.create(payload)
-      toast.success(faculty ? 'Ֆակուլտետը թարմացվեց' : 'Ֆակուլտետը ստեղծվեց՝ 5 կուրսերով')
-      onSaved()
-      onClose()
-    } catch (error) {
-      toast.error(getErrorMessage(error))
-    }
-  }
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={faculty ? 'Խմբագրել ֆակուլտետը' : 'Նոր ֆակուլտետ'}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Չեղարկել
-          </Button>
-          <Button type="submit" form="faculty-form" isLoading={formState.isSubmitting}>
-            Պահպանել
-          </Button>
-        </>
-      }
-    >
-      <form id="faculty-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-        <FormField label="Անվանում" error={formState.errors.name?.message}>
-          <TextInput {...register('name', { required: 'Մուտքագրեք անվանումը', maxLength: { value: 150, message: 'Առավելագույնը 150 նիշ' } })} />
-        </FormField>
-        <FormField label="Կարճ անվանում" hint="Ցուցադրվում է ցուցակներում, օր.՝ «Ֆինանսներ»">
-          <TextInput {...register('shortName', { maxLength: 60 })} />
-        </FormField>
-        <FormField
-          label="Մասնաշենք"
-          hint="Լսարանների զբաղվածությունը ստուգվում է նույն մասնաշենքի ներսում։ Դատարկ թողնելու դեպքում ֆակուլտետը կունենա իր առանձին մասնաշենքը։"
-        >
-          <TextInput {...register('building', { maxLength: 100 })} />
-        </FormField>
-      </form>
-    </Modal>
-  )
-}
 
 /** Ֆակուլտետների կառավարում (միայն գլխավոր ադմինիստրատոր)։ */
 export const FacultiesManagePage = () => {
@@ -180,6 +116,10 @@ export const FacultiesManagePage = () => {
                 <Badge>{faculty.shortName}</Badge>
                 <Badge>{faculty.cohorts.length} կուրս/ծրագիր</Badge>
                 {faculty.building && <Badge>{faculty.building}</Badge>}
+                {faculty.dean && <Badge>Դեկան՝ {faculty.dean}</Badge>}
+                {faculty.divisions.map((division) => (
+                  <Badge key={division.id}>{division.name}</Badge>
+                ))}
                 {!faculty.isPublished && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                     <EyeOff className="size-3" />
@@ -212,7 +152,13 @@ export const FacultiesManagePage = () => {
         ))}
       </ul>
 
-      <FacultyFormModal isOpen={isFormOpen} faculty={editing} onClose={() => setIsFormOpen(false)} onSaved={reload} />
+      <FacultyFormModal
+        isOpen={isFormOpen}
+        faculty={editing}
+        faculties={data ?? []}
+        onClose={() => setIsFormOpen(false)}
+        onSaved={reload}
+      />
     </>
   )
 }

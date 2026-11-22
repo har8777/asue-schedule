@@ -20,7 +20,6 @@ import {
 } from '../schedule-config/schedule-config.constants.ts'
 import {
   entriesForHours,
-  HOURS_STEP,
   MAX_PLAN_SUBJECTS,
   MAX_SUBJECT_HOURS,
   MIN_SUBJECT_HOURS,
@@ -286,13 +285,17 @@ export class CurriculumService {
     return outside.length
   }
 
+  /**
+   * Ժամաքանակը կարելի է ընտրել ցուցակից կամ գրել ձեռքով։ 16-ի պատիկները
+   * տալիս են ամբողջ կամ կես մուտք, մյուս արժեքները՝ կոտորակային սահմանաչափ։
+   */
   private parseHours(value: unknown): number {
-    if (typeof value !== 'number' || !Number.isFinite(value)) throw badRequest('«Ժամաքանակ» դաշտը պարտադիր է')
-    const hours = Math.round(value)
+    const raw = typeof value === 'string' ? Number(value.trim()) : value
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) throw badRequest('«Ժամաքանակ» դաշտը պարտադիր է')
+    const hours = Math.round(raw)
     if (hours < MIN_SUBJECT_HOURS || hours > MAX_SUBJECT_HOURS) {
       throw badRequest(`Ժամաքանակը պետք է լինի ${MIN_SUBJECT_HOURS}-ից ${MAX_SUBJECT_HOURS} միջակայքում`)
     }
-    if (hours % HOURS_STEP !== 0) throw badRequest(`Ժամաքանակը պետք է լինի ${HOURS_STEP}-ի պատիկ (16, 32, 48, 64, 80 …)`)
     return hours
   }
 

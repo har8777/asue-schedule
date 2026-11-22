@@ -21,6 +21,8 @@ export interface CohortSettings {
 export interface Cohort {
   id: string
   facultyId: string
+  /** Կցված բաժինը (օր.՝ «Հեռակա»)։ null՝ ֆակուլտետի հիմնական ցանկում։ */
+  divisionId: string | null
   name: string
   kind: CohortKind
   sortOrder: number

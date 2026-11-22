@@ -83,9 +83,11 @@ export class CohortsService {
     const name = requireString(body.name, 'Անվանում', { max: 80 })
     if (this.cohorts.findByName(facultyId, name)) throw conflict(`«${name}» անունով կուրս արդեն կա`)
 
+    const divisionId = body.divisionId === undefined || body.divisionId === null ? null : requireString(body.divisionId, 'Բաժին', { max: 100 })
     const cohort: Cohort = {
       id: createId(),
       facultyId,
+      divisionId,
       name,
       kind: body.kind === undefined ? 'program' : requireOneOf(body.kind, COHORT_KINDS, 'Տեսակ'),
       sortOrder: this.cohorts.nextSortOrder(facultyId),

@@ -85,12 +85,31 @@ after(async () => {
 })
 
 describe('Ուսումնական պլան', () => {
-  it('ժամաքանակը պետք է լինի 16-ի պատիկ', async () => {
-    const { status } = await api('POST', `/cohorts/${cohortId}/plan/subjects`, {
+  it('ժամաքանակը կարելի է գրել ձեռքով (ոչ միայն 16-ի պատիկ)', async () => {
+    const manual = await api('POST', `/cohorts/${cohortId}/plan/subjects`, {
       token: superToken,
       body: { subject: 'Վիճակագրություն', hours: 20 },
     })
-    assert.equal(status, 400)
+    assert.equal(manual.status, 200)
+    assert.equal(manual.body.draft.subjects.find((item: any) => item.subject === 'Վիճակագրություն').hours, 20)
+
+    // Սահմաններից դուրս արժեքները չեն ընդունվում
+    assert.equal(
+      (await api('POST', `/cohorts/${cohortId}/plan/subjects`, { token: superToken, body: { subject: 'Սխալ', hours: 0 } }))
+        .status,
+      400,
+    )
+    assert.equal(
+      (await api('POST', `/cohorts/${cohortId}/plan/subjects`, { token: superToken, body: { subject: 'Սխալ', hours: 999 } }))
+        .status,
+      400,
+    )
+
+    // Մաքրում ենք՝ հետագա ստուգումները չխանգարելու համար
+    await api('POST', `/cohorts/${cohortId}/plan/subjects/delete`, {
+      token: superToken,
+      body: { subject: 'Վիճակագրություն' },
+    })
   })
 
   it('չհաստատված պլանը չի երևում ֆակուլտետի ադմինի մոտ', async () => {

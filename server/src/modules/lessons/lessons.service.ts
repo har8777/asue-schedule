@@ -9,6 +9,7 @@ import type { ChangeLogRepository } from '../change-log/change-log.repository.ts
 import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
 import type { CurriculumService } from '../curriculum/curriculum.service.ts'
 import type { Cohort } from '../cohorts/cohorts.types.ts'
+import type { DivisionsRepository } from '../divisions/divisions.repository.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { Faculty } from '../faculties/faculties.types.ts'
 import { detectConflictsFor } from './conflict-detector.ts'
@@ -40,6 +41,7 @@ export class LessonsService {
   private readonly lessons: LessonsRepository
   private readonly cohorts: CohortsRepository
   private readonly faculties: FacultiesRepository
+  private readonly divisions: DivisionsRepository
   private readonly catalog: CatalogService
   private readonly curriculum: CurriculumService
   private readonly changeLog: ChangeLogRepository
@@ -49,6 +51,7 @@ export class LessonsService {
     lessons: LessonsRepository,
     cohorts: CohortsRepository,
     faculties: FacultiesRepository,
+    divisions: DivisionsRepository,
     catalog: CatalogService,
     curriculum: CurriculumService,
     changeLog: ChangeLogRepository,
@@ -57,6 +60,7 @@ export class LessonsService {
     this.lessons = lessons
     this.cohorts = cohorts
     this.faculties = faculties
+    this.divisions = divisions
     this.catalog = catalog
     this.curriculum = curriculum
     this.changeLog = changeLog
@@ -71,6 +75,15 @@ export class LessonsService {
   }
 
   /** Սևագիր կուրսի (կամ ֆակուլտետի) դասացուցակը տեսնում է միայն գլխավոր ադմինը։ */
+  /**
+   * Կուրսի մասնաշենքը։ Կցված բաժինը կարող է ունենալ սեփականը, հակառակ դեպքում
+   * օգտագործվում է մայր ֆակուլտետինը (լսարանների բախումը ստուգվում է միասին)։
+   */
+  private resolveBuilding(cohort: Cohort, faculty: Faculty): string {
+    if (!cohort.divisionId) return faculty.building
+    return this.divisions.findById(cohort.divisionId)?.building || faculty.building
+  }
+
   getSchedule(cohortId: string, user: AuthUser | null = null): CohortSchedule {
     const { cohort, faculty } = this.getCohortContext(cohortId)
     if (!isSuperAdmin(user) && (!cohort.isPublished || !faculty.isPublished)) {
@@ -84,8 +97,8 @@ export class LessonsService {
    * բացառությամբ խմբագրվող վանդակի։ Խմբագրիչը դրանք ցույց է տալիս որպես ոչ ակտիվ։
    */
   getOccupancy(key: LessonKey): SlotOccupancy {
-    const { faculty } = this.getCohortContext(key.cohortId)
-    const building = normalizeName(faculty.building)
+    const { cohort, faculty } = this.getCohortContext(key.cohortId)
+    const building = normalizeName(this.resolveBuilding(cohort, faculty))
     const others = this.lessons
       .findWithContext({ day: key.day, slot: key.slot })
       .filter((lesson) => !(lesson.cohortId === key.cohortId && lesson.streamId === key.streamId))
@@ -124,7 +137,7 @@ export class LessonsService {
       facultyId: faculty.id,
       facultyName: faculty.name,
       facultyShortName: faculty.shortName,
-      building: faculty.building,
+      building: this.resolveBuilding(cohort, faculty),
       cohortName: cohort.name,
       streamName: cohort.settings.streams.find((stream) => stream.id === input.streamId)?.name ?? input.streamId,
     }
