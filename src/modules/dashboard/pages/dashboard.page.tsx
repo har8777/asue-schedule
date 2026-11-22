@@ -7,7 +7,7 @@ import { ROLE_LABELS } from '../../auth/auth.constants'
 import { useAuth } from '../../auth/auth.context'
 import { Button } from '../../common/components/button.component'
 import { ErrorState, PageLoader } from '../../common/components/feedback.component'
-import { FormField, TextInput } from '../../common/components/form-controls.component'
+import { FormField, SelectInput, TextInput } from '../../common/components/form-controls.component'
 import { Modal } from '../../common/components/modal.component'
 import { Badge, Card, PageHeader } from '../../common/components/page-header.component'
 import { useToast } from '../../common/components/toast.context'
@@ -19,19 +19,24 @@ import { facultiesRequests } from '../../faculties/faculties.requests'
 import { useFaculties } from '../../faculties/hooks/use-faculties'
 import { PublishBanner } from '../../faculties/components/publish-banner.component'
 import { scheduleRequests } from '../../schedule/schedule.requests'
-import { sortCohorts } from '../../schedule/schedule.utils'
+import { groupCohorts } from '../../faculties/faculties.utils'
 
 const quickLinkClass =
   'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold shadow-sm transition-colors hover:border-brand-300 dark:border-slate-800 dark:bg-slate-900'
 
 const NewCohortModal = ({ faculty, onClose, onCreated }: { faculty: FacultyWithCohorts | null; onClose: () => void; onCreated: () => void }) => {
   const toast = useToast()
+  const [divisionId, setDivisionId] = useState('')
   const { register, handleSubmit, reset, formState } = useForm<{ name: string }>({ defaultValues: { name: '' } })
 
   const onSubmit = async ({ name }: { name: string }) => {
     if (!faculty) return
     try {
-      await scheduleRequests.createCohort(faculty.id, { name: name.trim(), kind: 'program' })
+      await scheduleRequests.createCohort(faculty.id, {
+        name: name.trim(),
+        kind: 'program',
+        divisionId: divisionId || null,
+      })
       toast.success('Ավելացվեց')
       reset()
       onCreated()
@@ -59,10 +64,22 @@ const NewCohortModal = ({ faculty, onClose, onCreated }: { faculty: FacultyWithC
         </>
       }
     >
-      <form id="new-cohort-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form id="new-cohort-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         <FormField label="Անվանում" error={formState.errors.name?.message} hint="Օր.՝ «Զբոսաշրջություն» կամ «6-րդ կուրս»">
           <TextInput {...register('name', { required: 'Մուտքագրեք անվանումը', maxLength: { value: 80, message: 'Առավելագույնը 80 նիշ' } })} />
         </FormField>
+        {(faculty?.divisions.length ?? 0) > 0 && (
+          <FormField label="Որտեղ ավելացնել" hint="Կցված բաժինն ունի իր առանձին խումբը">
+            <SelectInput value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>
+              <option value="">Ֆակուլտետի հիմնական ցանկում</option>
+              {faculty?.divisions.map((division) => (
+                <option key={division.id} value={division.id}>
+                  {division.name}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
+        )}
       </form>
     </Modal>
   )
@@ -89,6 +106,19 @@ export const DashboardPage = () => {
       await scheduleRequests.setCohortPublished(cohortId, true)
       await reload()
       toast.success('Կուրսը հրապարակվեց և այժմ տեսանելի է բոլորին')
+    } catch (publishError) {
+      toast.error(getErrorMessage(publishError))
+    } finally {
+      setPublishingId('')
+    }
+  }
+
+  const publishDivision = async (divisionId: string) => {
+    setPublishingId(divisionId)
+    try {
+      await facultiesRequests.setDivisionPublished(divisionId, true)
+      await reload()
+      toast.success('Բաժինը հրապարակվեց իր կուրսերով')
     } catch (publishError) {
       toast.error(getErrorMessage(publishError))
     } finally {
@@ -166,8 +196,27 @@ export const DashboardPage = () => {
                 Կուրս
               </Button>
             </div>
+            {groupCohorts(faculty).map((group) => (
+            <div key={group.division?.id ?? 'main'} className="mb-3 last:mb-0">
+              {group.division && (
+                <div className="mb-1.5 flex items-center gap-2">
+                  <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{group.division.name}</p>
+                  {!group.division.isPublished && <EyeOff className="size-3.5 text-amber-600" />}
+                  {isSuperAdmin && !group.division.isPublished && faculty.isPublished && (
+                    <Button
+                      variant="success"
+                      size="sm"
+                      icon={<Eye className="size-3.5" />}
+                      isLoading={publishingId === group.division.id}
+                      onClick={() => publishDivision(group.division!.id)}
+                    >
+                      Հրապարակել
+                    </Button>
+                  )}
+                </div>
+              )}
             <div className="grid gap-2 sm:grid-cols-2">
-              {sortCohorts(faculty.cohorts).map((cohort) => (
+              {group.cohorts.map((cohort) => (
                 <div key={cohort.id} className="flex flex-col gap-1">
                   <Link
                     to={APP_ROUTES.admin.editor(cohort.id)}
@@ -199,6 +248,8 @@ export const DashboardPage = () => {
                 </div>
               ))}
             </div>
+            </div>
+            ))}
           </Card>
         ))}
       </div>

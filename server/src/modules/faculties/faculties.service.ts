@@ -8,6 +8,7 @@ import type { ChangeLogRepository } from '../change-log/change-log.repository.ts
 import { createDefaultCohortSettings, DEFAULT_YEAR_COHORTS } from '../cohorts/cohorts.constants.ts'
 import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
+import type { DivisionsRepository } from '../divisions/divisions.repository.ts'
 import type { FacultiesRepository } from './faculties.repository.ts'
 import type { Faculty, FacultyInput, FacultyWithCohorts } from './faculties.types.ts'
 
@@ -15,6 +16,7 @@ export class FacultiesService {
   private readonly db: Database
   private readonly faculties: FacultiesRepository
   private readonly cohorts: CohortsRepository
+  private readonly divisions: DivisionsRepository
   private readonly lessons: LessonsRepository
   private readonly changeLog: ChangeLogRepository
 
@@ -22,12 +24,14 @@ export class FacultiesService {
     db: Database,
     faculties: FacultiesRepository,
     cohorts: CohortsRepository,
+    divisions: DivisionsRepository,
     lessons: LessonsRepository,
     changeLog: ChangeLogRepository,
   ) {
     this.db = db
     this.faculties = faculties
     this.cohorts = cohorts
+    this.divisions = divisions
     this.lessons = lessons
     this.changeLog = changeLog
   }
@@ -47,6 +51,9 @@ export class FacultiesService {
         cohorts: cohorts.filter(
           (cohort) => cohort.facultyId === faculty.id && (showDrafts || cohort.isPublished),
         ),
+        divisions: this.divisions
+          .findByFaculty(faculty.id)
+          .filter((division) => showDrafts || division.isPublished),
       }))
   }
 
@@ -57,6 +64,7 @@ export class FacultiesService {
     return {
       ...faculty,
       cohorts: this.cohorts.findByFaculty(id).filter((cohort) => showDrafts || cohort.isPublished),
+      divisions: this.divisions.findByFaculty(id).filter((division) => showDrafts || division.isPublished),
     }
   }
 
@@ -67,9 +75,8 @@ export class FacultiesService {
     return this.db.transaction(() => {
       this.faculties.update({ ...faculty, isPublished })
       if (withCohorts) {
-        this.cohorts
-          .findByFaculty(id)
-          .forEach((cohort) => this.cohorts.update({ ...cohort, isPublished }))
+        this.cohorts.findByFaculty(id).forEach((cohort) => this.cohorts.update({ ...cohort, isPublished }))
+        this.divisions.findByFaculty(id).forEach((division) => this.divisions.update({ ...division, isPublished }))
       }
       return this.getById(id, { role: 'SUPER_ADMIN' } as AuthUser)
     })
@@ -108,6 +115,7 @@ export class FacultiesService {
         this.cohorts.insert({
           id: createId(),
           facultyId: faculty.id,
+          divisionId: null,
           name,
           kind: 'year',
           sortOrder: index + 1,
@@ -176,6 +184,7 @@ export class FacultiesService {
       shortName: optionalString(body.shortName, 'Կարճ անվանում', 60) || name,
       // Ըստ նախնականի յուրաքանչյուր ֆակուլտետ ունի իր մասնաշենքը (լսարանները առանձին են)
       building: optionalString(body.building, 'Մասնաշենք', 100) || name,
+      dean: optionalString(body.dean, 'Դեկան', 120) ?? '',
     }
   }
 }

@@ -53,10 +53,13 @@ const findStreamName = (rawSettings: string, streamId: string): string => {
 
 const CONTEXT_SELECT = `
   SELECT l.*, c.faculty_id, c.name AS cohort_name, c.settings AS cohort_settings,
-         f.name AS faculty_name, f.short_name AS faculty_short_name, f.building
+         f.name AS faculty_name, f.short_name AS faculty_short_name,
+         -- Բաժինը կարող է ունենալ սեփական մասնաշենք. դատարկի դեպքում՝ մայր ֆակուլտետինը
+         COALESCE(NULLIF(d.building, ''), f.building) AS building
   FROM lessons l
   JOIN cohorts c ON c.id = l.cohort_id
-  JOIN faculties f ON f.id = c.faculty_id`
+  JOIN faculties f ON f.id = c.faculty_id
+  LEFT JOIN faculty_divisions d ON d.id = c.division_id`
 
 export class LessonsRepository {
   private readonly db: Database

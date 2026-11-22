@@ -3,10 +3,17 @@ import { Controller, useForm } from 'react-hook-form'
 import { Button } from '../../common/components/button.component'
 import { ComboboxInput } from '../../common/components/combobox-input.component'
 import { EmptyState } from '../../common/components/feedback.component'
-import { SelectInput } from '../../common/components/form-controls.component'
+import { SelectInput, TextInput } from '../../common/components/form-controls.component'
 import { cn } from '../../common/utils/classnames'
 import type { CohortStream } from '../../schedule/schedule.types'
-import { describeHours, entriesForHours, formatEntries, SUGGESTED_HOURS } from '../curriculum.constants'
+import {
+  describeHours,
+  entriesForHours,
+  formatEntries,
+  MAX_SUBJECT_HOURS,
+  MIN_SUBJECT_HOURS,
+  SUGGESTED_HOURS,
+} from '../curriculum.constants'
 import type { PlanSubject, SubjectUsage } from '../curriculum.types'
 
 interface AddSubjectForm {
@@ -34,10 +41,12 @@ export const PlanSubjectsEditor = ({
   onAdd,
   onRemove,
 }: PlanSubjectsEditorProps) => {
-  const { register, control, handleSubmit, reset, formState } = useForm<AddSubjectForm>({
+  const { register, control, handleSubmit, reset, setValue, watch, formState } = useForm<AddSubjectForm>({
     defaultValues: { subject: '', hours: String(SUGGESTED_HOURS[1]) },
   })
   const usageBySubject = new Map(usage.map((item) => [item.subject, item]))
+  const hoursValue = watch('hours')
+  const previewEntries = Number(hoursValue) > 0 ? entriesForHours(Number(hoursValue)) : 0
 
   const submit = handleSubmit(async ({ subject, hours }) => {
     await onAdd(subject.trim(), Number(hours))
@@ -65,17 +74,45 @@ export const PlanSubjectsEditor = ({
               )}
             />
           </div>
-          <SelectInput className="sm:w-56" aria-label="Ժամաքանակ" {...register('hours')}>
-            {SUGGESTED_HOURS.map((hours) => (
-              <option key={hours} value={hours}>
-                {hours} ժամ — {formatEntries(entriesForHours(hours))} մուտք
-              </option>
-            ))}
-          </SelectInput>
+          <div className="flex gap-2 sm:w-64">
+            <TextInput
+              type="number"
+              min={MIN_SUBJECT_HOURS}
+              max={MAX_SUBJECT_HOURS}
+              step={1}
+              className="w-24"
+              aria-label="Ժամաքանակ"
+              hasError={Boolean(formState.errors.hours)}
+              {...register('hours', {
+                required: true,
+                min: MIN_SUBJECT_HOURS,
+                max: MAX_SUBJECT_HOURS,
+                valueAsNumber: false,
+              })}
+            />
+            <SelectInput
+              className="flex-1"
+              aria-label="Ընտրել ժամաքանակ"
+              value={SUGGESTED_HOURS.includes(Number(hoursValue)) ? String(hoursValue) : ''}
+              onChange={(event) => event.target.value && setValue('hours', event.target.value)}
+            >
+              <option value="">Ձեռքով</option>
+              {SUGGESTED_HOURS.map((hours) => (
+                <option key={hours} value={hours}>
+                  {hours} ժամ — {formatEntries(entriesForHours(hours))} մուտք
+                </option>
+              ))}
+            </SelectInput>
+          </div>
           <Button type="submit" icon={<Plus className="size-4" />} isLoading={formState.isSubmitting}>
             Ավելացնել
           </Button>
         </form>
+      )}
+      {canEdit && previewEntries > 0 && (
+        <p className="mb-4 -mt-2 text-xs text-slate-500 dark:text-slate-400">
+          {hoursValue} ժամ = {formatEntries(previewEntries)} շաբաթական մուտք (ժամաքանակ ÷ 2 ÷ 16)
+        </p>
       )}
 
       {subjects.length === 0 ? (

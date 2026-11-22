@@ -121,6 +121,28 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE cohorts ADD COLUMN is_published INTEGER NOT NULL DEFAULT 1;
     `,
   },
+  {
+    version: 6,
+    name: 'faculty-divisions-and-dean',
+    // Ֆակուլտետին կցված բաժին (օր.՝ «Հեռակա»)՝ մայր ֆակուլտետի ներսում, առանձին խմբով։
+    // Դատարկ building նշանակում է, որ բաժինը օգտագործում է մայր ֆակուլտետի լսարանները։
+    sql: `
+      CREATE TABLE faculty_divisions (
+        id TEXT PRIMARY KEY,
+        faculty_id TEXT NOT NULL REFERENCES faculties(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        building TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_published INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        UNIQUE (faculty_id, name)
+      );
+      CREATE INDEX idx_divisions_faculty ON faculty_divisions (faculty_id);
+
+      ALTER TABLE cohorts ADD COLUMN division_id TEXT REFERENCES faculty_divisions(id) ON DELETE SET NULL;
+      ALTER TABLE faculties ADD COLUMN dean TEXT NOT NULL DEFAULT '';
+    `,
+  },
 ]
 
 /**

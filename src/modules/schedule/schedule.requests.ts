@@ -32,7 +32,10 @@ export const scheduleRequests = {
   clearCohort: async (cohortId: string): Promise<{ deleted: number }> =>
     (await httpClient.delete<{ deleted: number }>(`/cohorts/${cohortId}/lessons`)).data,
 
-  createCohort: async (facultyId: string, payload: { name: string; kind: CohortKind }): Promise<Cohort> =>
+  createCohort: async (
+    facultyId: string,
+    payload: { name: string; kind: CohortKind; divisionId?: string | null },
+  ): Promise<Cohort> =>
     (await httpClient.post<Cohort>(`/faculties/${facultyId}/cohorts`, payload)).data,
 
   updateCohort: async (cohortId: string, payload: { name?: string; settings?: CohortSettings }): Promise<UpdateCohortResult> =>

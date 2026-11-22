@@ -103,6 +103,7 @@ export class BackupService {
         name: requireString(item.name, 'Անվանում', { max: 150 }),
         shortName: typeof item.shortName === 'string' ? item.shortName : '',
         building: typeof item.building === 'string' ? item.building : '',
+        dean: typeof item.dean === 'string' ? item.dean : '',
         sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : 0,
         // Հին պահուստներում դաշտը չկա. այդ տվյալները արդեն հրապարակված էին
         isPublished: item.isPublished !== false,
@@ -116,6 +117,7 @@ export class BackupService {
         facultyId: requireString(item.facultyId, 'facultyId', { max: 100 }),
         name: requireString(item.name, 'Անվանում', { max: 80 }),
         kind: requireOneOf(item.kind, ['year', 'program'] as const, 'Տեսակ'),
+        divisionId: typeof item.divisionId === 'string' ? item.divisionId : null,
         sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : 0,
         isPublished: item.isPublished !== false,
         settings: cohortsService.parseSettings(item.settings),
@@ -191,6 +193,7 @@ export class BackupService {
             facultyId: faculty.id,
             name: cell.cohortName,
             kind: /կուրս/.test(cell.cohortName) ? 'year' : 'program',
+            divisionId: null,
             sortOrder: cohorts.nextSortOrder(faculty.id),
             isPublished: true,
             settings: { streams: [1, 2, 3, 4].map(createStream), days: DAY_KEYS.slice(0, 5), daySlotStart: {} },

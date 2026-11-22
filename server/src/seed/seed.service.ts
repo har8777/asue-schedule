@@ -44,6 +44,7 @@ export const seedDatabase = async (deps: SeedDependencies): Promise<void> => {
             facultyId: seed.id,
             name,
             kind: 'program',
+        divisionId: null,
         isPublished: true,
             sortOrder: cohorts.nextSortOrder(seed.id),
             settings: createDefaultCohortSettings(),
