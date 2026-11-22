@@ -1,5 +1,7 @@
 import { BookOpen, DoorOpen, Download, FileSpreadsheet, Plus, Trash2, UserRound } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { APP_ROUTES } from '../../../app/app.routes'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../auth/auth.context'
 import { Button } from '../../common/components/button.component'
@@ -13,6 +15,10 @@ import { useDocumentTitle } from '../../common/hooks/use-document-title'
 import { getErrorMessage } from '../../common/http/http-error'
 import { compareArmenian } from '../../common/utils/format'
 import { useFaculties } from '../../faculties/hooks/use-faculties'
+import { PlanSubjectsEditor } from '../../curriculum/components/plan-subjects-editor.component'
+import { curriculumRequests } from '../../curriculum/curriculum.requests'
+import { useCohortPlan } from '../../curriculum/hooks/use-cohort-plan'
+import { sortCohorts } from '../../schedule/schedule.utils'
 import { catalogRequests } from '../catalog.requests'
 import { CATALOG_TYPE_LABELS, CATALOG_TYPE_SINGULAR, EMPTY_CATALOG, type CatalogItem, type CatalogType } from '../catalog.types'
 import { downloadCatalogTemplate, parseCatalogWorkbook } from '../services/catalog-excel.service'
@@ -34,12 +40,49 @@ export const CatalogPage = () => {
   const faculties = useFaculties()
   const [selectedFacultyId, setSelectedFacultyId] = useState(user?.facultyId ?? '')
   const facultyId = isSuperAdmin ? selectedFacultyId || faculties.data?.[0]?.id || '' : (user?.facultyId ?? '')
+  const [cohortId, setCohortId] = useState('')
   const [type, setType] = useState<CatalogType>('subject')
   const [filter, setFilter] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const catalog = useAsyncData(() => (facultyId ? catalogRequests.getForFaculty(facultyId) : Promise.resolve(EMPTY_CATALOG)), [facultyId])
   const { register, handleSubmit, reset, formState } = useForm<AddItemForm>({ defaultValues: { name: '', floor: '' } })
+
+  // Ֆակուլտետ + կուրս. կուրս ընտրելիս ցուցադրվում են տվյալ կուրսի դասընթացները ժամաքանակով
+  const cohorts = useMemo(() => sortCohorts(faculties.data?.find((item) => item.id === facultyId)?.cohorts ?? []), [faculties.data, facultyId])
+  const cohort = cohorts.find((item) => item.id === cohortId) ?? null
+  const plan = useCohortPlan(cohort?.id ?? '')
+  const planContent = isSuperAdmin ? (plan.data?.draft ?? null) : (plan.data?.published ?? null)
+  const isPlanView = Boolean(cohort) && type === 'subject'
+
+  useEffect(() => {
+    if (cohortId && !cohorts.some((item) => item.id === cohortId)) setCohortId('')
+  }, [cohorts, cohortId])
+
+  const onAddPlanSubject = async (subject: string, hours: number) => {
+    if (!cohort) return
+    try {
+      plan.setData(await curriculumRequests.setSubject(cohort.id, { subject, hours }))
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    }
+  }
+
+  const onRemovePlanSubject = async (subject: string) => {
+    if (!cohort) return
+    const isConfirmed = await confirm({
+      title: `Հեռացնե՞լ «${subject}»-ը պլանից`,
+      message: 'Արդեն լրացված դասերը չեն ջնջվի, բայց առարկան այլևս ժամաքանակի սահմանափակում չի ունենա։',
+      confirmText: 'Հեռացնել',
+      isDanger: true,
+    })
+    if (!isConfirmed) return
+    try {
+      plan.setData(await curriculumRequests.removeSubject(cohort.id, subject))
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    }
+  }
 
   const items = useMemo(() => {
     const list: CatalogItem[] = catalog.data?.[LIST_KEY[type]] ?? []
@@ -133,6 +176,14 @@ export const CatalogPage = () => {
           ) : (
             <p className="text-sm font-semibold">{faculties.data?.find((faculty) => faculty.id === facultyId)?.name}</p>
           )}
+          <SelectInput value={cohortId} onChange={(event) => setCohortId(event.target.value)} className="sm:w-60" aria-label="Կուրս">
+            <option value="">Բոլոր կուրսերը</option>
+            {cohorts.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </SelectInput>
           <SegmentedControl<CatalogType>
             value={type}
             onChange={setType}
@@ -144,7 +195,16 @@ export const CatalogPage = () => {
           />
         </div>
 
-        {canEditFaculty(facultyId) && (
+        {isPlanView && (
+          <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800 dark:bg-brand-900/40 dark:text-brand-100">
+            {cohort?.name}՝ ուսումնական պլանի դասընթացները ժամաքանակով։{' '}
+            <Link to={APP_ROUTES.admin.curriculum} className="underline">
+              Օրեր և ժամեր
+            </Link>
+          </p>
+        )}
+
+        {!isPlanView && canEditFaculty(facultyId) && (
           <form onSubmit={handleSubmit(onAdd)} className="flex flex-col gap-2 sm:flex-row" noValidate>
             <TextInput
               placeholder={`Նոր ${CATALOG_TYPE_SINGULAR[type].toLowerCase()}`}
@@ -159,6 +219,36 @@ export const CatalogPage = () => {
         )}
       </Card>
 
+      {isPlanView ? (
+        <>
+          {plan.isLoading && !plan.data && <PageLoader />}
+          {plan.error && <ErrorState message={plan.error} onRetry={plan.reload} />}
+          {plan.data && cohort && (
+            <>
+              {isSuperAdmin && plan.data.hasPendingChanges && (
+                <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                  Կան չհաստատված փոփոխություններ։ Դրանք կերևան մյուսների մոտ միայն «Ուսումնական պլան» էջից հաստատելուց հետո։
+                </p>
+              )}
+              {!isSuperAdmin && !plan.data.published && (
+                <p className="mb-3 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  Այս կուրսի ուսումնական պլանը դեռ հաստատված չէ։
+                </p>
+              )}
+              <PlanSubjectsEditor
+                subjects={planContent?.subjects ?? []}
+                usage={plan.data.usage}
+                streams={cohort.settings.streams}
+                canEdit={isSuperAdmin}
+                suggestions={catalog.data?.subjects.map((item) => item.name) ?? []}
+                onAdd={onAddPlanSubject}
+                onRemove={onRemovePlanSubject}
+              />
+            </>
+          )}
+        </>
+      ) : (
+        <>
       <TextInput value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Զտել ցուցակը..." className="mb-3" aria-label="Զտել" />
 
       {catalog.isLoading && !catalog.data && <PageLoader />}
@@ -179,6 +269,8 @@ export const CatalogPage = () => {
           </li>
         ))}
       </ul>
+        </>
+      )}
     </>
   )
 }

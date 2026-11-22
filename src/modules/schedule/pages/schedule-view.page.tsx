@@ -11,6 +11,7 @@ import { useFaculty } from '../../faculties/hooks/use-faculties'
 import { ScheduleBoard } from '../components/schedule-board.component'
 import { ScheduleExportMenu } from '../components/schedule-export-menu.component'
 import { ScheduleHeader } from '../components/schedule-header.component'
+import { ScheduleSectionTabs } from '../components/schedule-section-tabs.component'
 import { useCohortSchedule } from '../hooks/use-cohort-schedule'
 
 /** Հանրային դասացուցակ՝ ուսանողների համար (առանց մուտքի)։ */
@@ -32,6 +33,7 @@ export const ScheduleViewPage = () => {
 
   return (
     <>
+      <ScheduleSectionTabs scheduleTo={APP_ROUTES.schedule(schedule.cohort.id)} examsTo={APP_ROUTES.exams(schedule.cohort.id)} />
       <ScheduleHeader
         facultyName={schedule.faculty.name}
         cohortName={schedule.cohort.name}

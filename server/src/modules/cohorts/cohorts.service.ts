@@ -89,7 +89,11 @@ export class CohortsService {
     if (name !== cohort.name && this.cohorts.findByName(cohort.facultyId, name)) {
       throw conflict(`«${name}» անունով կուրս արդեն կա`)
     }
-    const settings = body.settings === undefined ? cohort.settings : this.parseSettings(body.settings)
+    // Ժամերը սահմանվում են ուսումնական պլանով, ուստի պահպանվում են անփոփոխ
+    const settings =
+      body.settings === undefined
+        ? cohort.settings
+        : { ...this.parseSettings(body.settings), slotTimes: cohort.settings.slotTimes }
     const updated: Cohort = { ...cohort, name, settings }
 
     return this.db.transaction(() => {

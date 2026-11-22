@@ -1,4 +1,5 @@
 import { DAY_KEYS, partLabel, SLOT_KEYS, SLOTS_PER_DAY, type DayKey, type SlotKey } from './schedule.constants'
+import type { SlotTime } from '../settings/settings.types'
 import type { Cohort, CohortSettings, Lesson, LessonKey, LessonLocation, LessonPart, Occupant } from './schedule.types'
 
 export const lessonKeyId = ({ day, slot, streamId }: LessonKey): string => `${day}|${slot}|${streamId}`
@@ -91,3 +92,10 @@ export const buildResourceOptions = (
     return { value }
   })
 }
+
+/** Դասաժամի ժամերը. կուրսի ուսումնական պլանով հաստատվածը գերակայում է ընդհանուրին։ */
+export const resolveSlotTime = (
+  settings: CohortSettings,
+  globalTimes: Record<SlotKey, SlotTime>,
+  slot: SlotKey,
+): SlotTime => settings.slotTimes?.[slot] ?? globalTimes[slot]

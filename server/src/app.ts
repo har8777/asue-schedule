@@ -20,6 +20,9 @@ import { ChangeLogRepository } from './modules/change-log/change-log.repository.
 import { createCohortsController } from './modules/cohorts/cohorts.controller.ts'
 import { CohortsRepository } from './modules/cohorts/cohorts.repository.ts'
 import { CohortsService } from './modules/cohorts/cohorts.service.ts'
+import { createCurriculumController } from './modules/curriculum/curriculum.controller.ts'
+import { CurriculumRepository } from './modules/curriculum/curriculum.repository.ts'
+import { CurriculumService } from './modules/curriculum/curriculum.service.ts'
 import { createFacultiesController } from './modules/faculties/faculties.controller.ts'
 import { FacultiesRepository } from './modules/faculties/faculties.repository.ts'
 import { FacultiesService } from './modules/faculties/faculties.service.ts'
@@ -64,6 +67,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const catalogRepository = new CatalogRepository(db)
   const usersRepository = new UsersRepository(db)
   const changeLogRepository = new ChangeLogRepository(db)
+  const curriculumRepository = new CurriculumRepository(db)
 
   // Ծառայություններ
   const jwt = new JwtService(resolveJwtSecret(config, settingsRepository), config.jwtTtlSeconds)
@@ -73,12 +77,20 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const catalogService = new CatalogService(catalogRepository, facultiesRepository)
   const facultiesService = new FacultiesService(db, facultiesRepository, cohortsRepository, lessonsRepository, changeLogRepository)
   const cohortsService = new CohortsService(db, cohortsRepository, facultiesRepository, lessonsRepository, changeLogRepository)
+  const curriculumService = new CurriculumService(
+    db,
+    curriculumRepository,
+    cohortsRepository,
+    lessonsRepository,
+    changeLogRepository,
+  )
   const lessonsService = new LessonsService(
     db,
     lessonsRepository,
     cohortsRepository,
     facultiesRepository,
     catalogService,
+    curriculumService,
     changeLogRepository,
   )
   const reportsService = new ReportsService(lessonsRepository, catalogRepository, facultiesRepository)
@@ -116,6 +128,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
     .use(createFacultiesController(facultiesService, guards))
     .use(createCohortsController(cohortsService, guards))
     .use(createLessonsController(lessonsService, guards))
+    .use(createCurriculumController(curriculumService, guards))
     .use(createCatalogController(catalogService, lessonsRepository, guards))
     .use(createReportsController(reportsService, guards))
     .use(createChangeLogController(changeLogRepository, guards))

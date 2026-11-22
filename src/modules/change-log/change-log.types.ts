@@ -5,6 +5,7 @@ export type ChangeLogAction =
   | 'lesson.delete'
   | 'cohort.clear'
   | 'cohort.settings'
+  | 'plan.publish'
   | 'faculty.clear'
   | 'schedule.clear-all'
   | 'backup.restore'
@@ -14,6 +15,7 @@ export const CHANGE_LOG_ACTION_LABELS: Record<ChangeLogAction, string> = {
   'lesson.delete': 'Դասը ջնջվեց',
   'cohort.clear': 'Կուրսի դասացուցակը մաքրվեց',
   'cohort.settings': 'Կուրսի կառուցվածքը փոխվեց',
+  'plan.publish': 'Ուսումնական պլանը հաստատվեց',
   'faculty.clear': 'Ֆակուլտետի դասացուցակը մաքրվեց',
   'schedule.clear-all': 'Ամբողջ դասացուցակը մաքրվեց',
   'backup.restore': 'Վերականգնում պահուստից',

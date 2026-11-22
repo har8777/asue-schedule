@@ -4,7 +4,7 @@ import { cn } from '../../common/utils/classnames'
 import { useSettings } from '../../settings/settings.context'
 import { DAY_LABELS } from '../schedule.constants'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
-import { getDaySlots, lessonKeyId } from '../schedule.utils'
+import { getDaySlots, lessonKeyId, resolveSlotTime } from '../schedule.utils'
 import { LessonContent } from './lesson-content.component'
 
 interface ScheduleTableProps {
@@ -47,7 +47,7 @@ export const ScheduleTable = ({ cohort, lessons, isEditable = false, onCellClick
               <Fragment key={day}>
                 {slots.map((slot, slotIndex) => {
                   const isLastSlot = slotIndex === slots.length - 1
-                  const time = settings.slotTimes[slot]
+                  const time = resolveSlotTime(cohort.settings, settings.slotTimes, slot)
                   return (
                     <tr
                       key={`${day}-${slot}`}

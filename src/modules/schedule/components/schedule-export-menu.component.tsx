@@ -62,7 +62,7 @@ export const ScheduleExportMenu = ({ schedule }: { schedule: CohortSchedule }) =
       toast.info('Այս հոսքում դեռ դասեր չկան')
       return
     }
-    downloadIcsCalendar(events, settings, `${cohort.name} ${streamName}`)
+    downloadIcsCalendar(events, settings, `${cohort.name} ${streamName}`, cohort.settings)
     toast.success('Օրացույցի ֆայլը ներբեռնվեց։ Բացեք այն՝ դասերը Ձեր օրացույց ավելացնելու համար։')
   }
 
