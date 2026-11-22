@@ -1,10 +1,11 @@
-import { CalendarPlus, ChevronDown, FileDown, Printer } from 'lucide-react'
+import { CalendarPlus, ChevronDown, FileDown, FileSpreadsheet, Printer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../common/components/button.component'
 import { useToast } from '../../common/components/toast.context'
 import { useSettings } from '../../settings/settings.context'
 import type { CohortSchedule } from '../schedule.types'
 import { downloadIcsCalendar, type CalendarLesson } from '../services/ics-export.service'
+import { downloadOfficialExcel } from '../services/official-excel.service'
 import { exportElementToPdf } from '../services/pdf-export.service'
 import { SCHEDULE_EXPORT_ELEMENT_ID } from './schedule-board.component'
 
@@ -37,6 +38,24 @@ export const ScheduleExportMenu = ({ schedule }: { schedule: CohortSchedule }) =
       await exportElementToPdf(SCHEDULE_EXPORT_ELEMENT_ID, title)
     } catch {
       toast.error('PDF ֆայլը ստեղծել չհաջողվեց։ Փորձեք «Տպել» → «Պահպանել որպես PDF»։')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  /** Պաշտոնական ձևաչափով Excel՝ յուրաքանչյուր հոսքի համար առանձին թերթ։ */
+  const exportOfficialExcel = async () => {
+    setIsOpen(false)
+    setIsExporting(true)
+    try {
+      await downloadOfficialExcel({
+        cohort,
+        lessons: new Map(lessons.map((item) => [`${item.day}|${item.slot}|${item.streamId}`, item])),
+        settings,
+        facultyName: faculty.name,
+      })
+    } catch {
+      toast.error('Excel ֆայլը ստեղծել չհաջողվեց')
     } finally {
       setIsExporting(false)
     }
@@ -76,6 +95,9 @@ export const ScheduleExportMenu = ({ schedule }: { schedule: CohortSchedule }) =
         <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <button type="button" className={menuItemClass} onClick={exportPdf}>
             <FileDown className="size-4 text-red-500" /> Ներբեռնել PDF
+          </button>
+          <button type="button" className={menuItemClass} onClick={exportOfficialExcel}>
+            <FileSpreadsheet className="size-4 text-emerald-600" /> Excel (պաշտոնական ձև)
           </button>
           <button
             type="button"

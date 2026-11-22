@@ -84,7 +84,11 @@ export const LessonEditorModal = ({ cohort, catalog, planSubjects, lessons, targ
 
   const catalogNames = useMemo(
     () => ({
-      subjects: [...new Set([...planSubjects.map((item) => item.subject), ...catalog.subjects.map((item) => item.name)])],
+      // Եթե կուրսն ունի հաստատված ուսումնական պլան, առաջարկվում են միայն պլանի առարկաները
+      subjects:
+        planSubjects.length > 0
+          ? planSubjects.map((item) => item.subject)
+          : catalog.subjects.map((item) => item.name),
       lecturers: catalog.lecturers.map((item) => item.name),
       rooms: catalog.rooms.map((item) => item.name),
     }),
