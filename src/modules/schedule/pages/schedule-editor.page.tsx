@@ -1,4 +1,4 @@
-import { Eye, Redo2, SlidersHorizontal, Undo2 } from 'lucide-react'
+import { Eye, EyeOff, Redo2, SlidersHorizontal, Undo2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { APP_ROUTES } from '../../../app/app.routes'
@@ -31,7 +31,7 @@ export const ScheduleEditorPage = () => {
   const { cohortId } = useParams<{ cohortId: string }>()
   const navigate = useNavigate()
   const toast = useToast()
-  const { canEditFaculty } = useAuth()
+  const { canEditFaculty, isSuperAdmin } = useAuth()
   const { schedule, lessonMap, error, isLoading, reload, applyLesson, applyCohort } = useCohortSchedule(cohortId)
   const facultyId = schedule?.faculty.id
   const { data: faculty, reload: reloadFaculty } = useFaculty(facultyId)
@@ -41,6 +41,23 @@ export const ScheduleEditorPage = () => {
   )
   const plan = useCohortPlan(cohortId ?? '')
   const [editTarget, setEditTarget] = useState<LessonEditTarget | null>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
+
+  /** Սևագիր կուրսը հրապարակելուց հետո այն երևում է ուսանողներին։ */
+  const publishCohort = async () => {
+    if (!cohortId) return
+    setIsPublishing(true)
+    try {
+      const updated = await scheduleRequests.setCohortPublished(cohortId, true)
+      applyCohort(updated)
+      void reloadFaculty()
+      toast.success('Կուրսը հրապարակվեց և այժմ տեսանելի է բոլորին')
+    } catch (publishError) {
+      toast.error(getErrorMessage(publishError))
+    } finally {
+      setIsPublishing(false)
+    }
+  }
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useDocumentTitle(schedule ? `Խմբագրում՝ ${schedule.cohort.name}` : 'Խմբագրում')
@@ -112,6 +129,20 @@ export const ScheduleEditorPage = () => {
           </>
         }
       />
+
+      {!schedule.cohort.isPublished && (
+        <div className="print-hidden mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm dark:bg-amber-950/40">
+          <EyeOff className="size-4 shrink-0 text-amber-700 dark:text-amber-300" />
+          <p className="flex-1 font-semibold text-amber-900 dark:text-amber-200">
+            Այս կուրսը դեռ հրապարակված չէ՝ տեսնում եք միայն Դուք։
+          </p>
+          {isSuperAdmin && (
+            <Button variant="success" size="sm" icon={<Eye className="size-4" />} isLoading={isPublishing} onClick={publishCohort}>
+              Հրապարակել
+            </Button>
+          )}
+        </div>
+      )}
 
       <p className="print-hidden mb-3 text-xs text-slate-500">
         Սեղմեք վանդակի վրա՝ դաս ավելացնելու կամ խմբագրելու համար։ Փոփոխությունները պահպանվում են անմիջապես։

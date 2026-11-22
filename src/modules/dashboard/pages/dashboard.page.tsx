@@ -1,4 +1,4 @@
-import { Building2, DoorOpen, Pencil, Plus, TriangleAlert } from 'lucide-react'
+import { Building2, DoorOpen, Eye, EyeOff, Pencil, Plus, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
@@ -15,7 +15,9 @@ import { useDocumentTitle } from '../../common/hooks/use-document-title'
 import { getErrorMessage } from '../../common/http/http-error'
 import { cn } from '../../common/utils/classnames'
 import type { FacultyWithCohorts } from '../../faculties/faculties.types'
+import { facultiesRequests } from '../../faculties/faculties.requests'
 import { useFaculties } from '../../faculties/hooks/use-faculties'
+import { PublishBanner } from '../../faculties/components/publish-banner.component'
 import { scheduleRequests } from '../../schedule/schedule.requests'
 import { sortCohorts } from '../../schedule/schedule.utils'
 
@@ -71,8 +73,41 @@ export const DashboardPage = () => {
   useDocumentTitle('Վահանակ')
   const { user, isSuperAdmin, canEditFaculty } = useAuth()
   const { data, error, isLoading, reload } = useFaculties()
+  const toast = useToast()
   const [newCohortFaculty, setNewCohortFaculty] = useState<FacultyWithCohorts | null>(null)
+  const [publishingId, setPublishingId] = useState('')
   const editable = data?.filter((faculty) => canEditFaculty(faculty.id)) ?? []
+  const draftCohorts = editable.flatMap((faculty) =>
+    faculty.isPublished ? faculty.cohorts.filter((cohort) => !cohort.isPublished) : [],
+  )
+  const draftFaculties = editable.filter((faculty) => !faculty.isPublished)
+
+  /** Հրապարակում է կուրսը. դրանից հետո այն երևում է ուսանողներին։ */
+  const publishCohort = async (cohortId: string) => {
+    setPublishingId(cohortId)
+    try {
+      await scheduleRequests.setCohortPublished(cohortId, true)
+      await reload()
+      toast.success('Կուրսը հրապարակվեց և այժմ տեսանելի է բոլորին')
+    } catch (publishError) {
+      toast.error(getErrorMessage(publishError))
+    } finally {
+      setPublishingId('')
+    }
+  }
+
+  const publishFaculty = async (facultyId: string) => {
+    setPublishingId(facultyId)
+    try {
+      await facultiesRequests.setPublished(facultyId, true)
+      await reload()
+      toast.success('Ֆակուլտետը հրապարակվեց իր կուրսերով')
+    } catch (publishError) {
+      toast.error(getErrorMessage(publishError))
+    } finally {
+      setPublishingId('')
+    }
+  }
 
   return (
     <>
@@ -96,6 +131,8 @@ export const DashboardPage = () => {
         </Link>
       </div>
 
+      {isSuperAdmin && <PublishBanner faculties={draftFaculties.length} cohorts={draftCohorts.length} />}
+
       <h2 className="mb-3 text-lg font-bold">{isSuperAdmin ? 'Բոլոր ֆակուլտետները' : 'Իմ ֆակուլտետը'}</h2>
       {isLoading && !data && <PageLoader />}
       {error && <ErrorState message={error} onRetry={reload} />}
@@ -105,24 +142,61 @@ export const DashboardPage = () => {
           <Card key={faculty.id} className="p-4">
             <div className="mb-3 flex items-start gap-3">
               <Building2 className="mt-0.5 size-5 shrink-0 text-brand-600" />
-              <h3 className="flex-1 leading-snug font-bold">{faculty.name}</h3>
+              <div className="flex-1">
+                <h3 className="leading-snug font-bold">{faculty.name}</h3>
+                {!faculty.isPublished && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    <EyeOff className="size-3" />
+                    Սևագիր՝ տեսնում եք միայն Դուք
+                  </span>
+                )}
+              </div>
+              {isSuperAdmin && !faculty.isPublished && (
+                <Button
+                  variant="success"
+                  size="sm"
+                  icon={<Eye className="size-4" />}
+                  isLoading={publishingId === faculty.id}
+                  onClick={() => publishFaculty(faculty.id)}
+                >
+                  Հրապարակել
+                </Button>
+              )}
               <Button variant="ghost" size="sm" icon={<Plus className="size-4" />} onClick={() => setNewCohortFaculty(faculty)}>
                 Կուրս
               </Button>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {sortCohorts(faculty.cohorts).map((cohort) => (
-                <Link
-                  key={cohort.id}
-                  to={APP_ROUTES.admin.editor(cohort.id)}
-                  className={cn(
-                    'flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-slate-800',
-                    cohort.kind === 'program' ? 'border-emerald-200 dark:border-emerald-900' : 'border-slate-200 dark:border-slate-700',
+                <div key={cohort.id} className="flex flex-col gap-1">
+                  <Link
+                    to={APP_ROUTES.admin.editor(cohort.id)}
+                    className={cn(
+                      'flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-slate-800',
+                      !cohort.isPublished
+                        ? 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/20'
+                        : cohort.kind === 'program'
+                          ? 'border-emerald-200 dark:border-emerald-900'
+                          : 'border-slate-200 dark:border-slate-700',
+                    )}
+                  >
+                    <span className="truncate">{cohort.name}</span>
+                    {!cohort.isPublished && <EyeOff className="size-4 shrink-0 text-amber-600" />}
+                    <Pencil className="size-4 shrink-0 text-slate-400" />
+                  </Link>
+                  {isSuperAdmin && faculty.isPublished && !cohort.isPublished && (
+                    <Button
+                      variant="success"
+                      size="sm"
+                      className="self-start"
+                      icon={<Eye className="size-4" />}
+                      isLoading={publishingId === cohort.id}
+                      onClick={() => publishCohort(cohort.id)}
+                    >
+                      Հրապարակել
+                    </Button>
                   )}
-                >
-                  <span className="truncate">{cohort.name}</span>
-                  <Pencil className="size-4 shrink-0 text-slate-400" />
-                </Link>
+                </div>
               ))}
             </div>
           </Card>

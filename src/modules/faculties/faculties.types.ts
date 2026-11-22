@@ -6,6 +6,8 @@ export interface Faculty {
   shortName: string
   building: string
   sortOrder: number
+  /** Սևագիր ֆակուլտետը տեսնում է միայն գլխավոր ադմինը։ */
+  isPublished: boolean
   createdAt: string
 }
 

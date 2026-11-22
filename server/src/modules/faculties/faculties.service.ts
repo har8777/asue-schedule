@@ -2,6 +2,7 @@ import type { Database } from '../../core/database/database.ts'
 import { conflict, notFound } from '../../core/http/http-error.ts'
 import { createId, nowIso } from '../../core/utils/id.ts'
 import { asRecord, optionalString, requireString } from '../../core/validation/validators.ts'
+import { isSuperAdmin } from '../auth/auth.guards.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
 import { createDefaultCohortSettings, DEFAULT_YEAR_COHORTS } from '../cohorts/cohorts.constants.ts'
@@ -31,27 +32,77 @@ export class FacultiesService {
     this.changeLog = changeLog
   }
 
-  list(): FacultyWithCohorts[] {
+  /**
+   * Սևագիր ֆակուլտետներն ու կուրսերը տեսնում է միայն գլխավոր ադմինը։ Մնացածի
+   * համար (ֆակուլտետների ադմիններ և ուսանողներ) դրանք կարծես գոյություն չունեն։
+   */
+  list(user: AuthUser | null = null): FacultyWithCohorts[] {
+    const showDrafts = isSuperAdmin(user)
     const cohorts = this.cohorts.findAll()
-    return this.faculties.findAll().map((faculty) => ({
-      ...faculty,
-      cohorts: cohorts.filter((cohort) => cohort.facultyId === faculty.id),
-    }))
+    return this.faculties
+      .findAll()
+      .filter((faculty) => showDrafts || faculty.isPublished)
+      .map((faculty) => ({
+        ...faculty,
+        cohorts: cohorts.filter(
+          (cohort) => cohort.facultyId === faculty.id && (showDrafts || cohort.isPublished),
+        ),
+      }))
   }
 
-  getById(id: string): FacultyWithCohorts {
+  getById(id: string, user: AuthUser | null = null): FacultyWithCohorts {
+    const showDrafts = isSuperAdmin(user)
+    const faculty = this.faculties.findById(id)
+    if (!faculty || (!showDrafts && !faculty.isPublished)) throw notFound('Ֆակուլտետը չի գտնվել')
+    return {
+      ...faculty,
+      cohorts: this.cohorts.findByFaculty(id).filter((cohort) => showDrafts || cohort.isPublished),
+    }
+  }
+
+  /** Հրապարակում կամ հետ է բերում սևագրի. ֆակուլտետը՝ իր կուրսերով կամ առանձին։ */
+  setPublished(id: string, isPublished: boolean, withCohorts = true): FacultyWithCohorts {
     const faculty = this.faculties.findById(id)
     if (!faculty) throw notFound('Ֆակուլտետը չի գտնվել')
-    return { ...faculty, cohorts: this.cohorts.findByFaculty(id) }
+    return this.db.transaction(() => {
+      this.faculties.update({ ...faculty, isPublished })
+      if (withCohorts) {
+        this.cohorts
+          .findByFaculty(id)
+          .forEach((cohort) => this.cohorts.update({ ...cohort, isPublished }))
+      }
+      return this.getById(id, { role: 'SUPER_ADMIN' } as AuthUser)
+    })
   }
 
-  /** Ստեղծում է ֆակուլտետ՝ ստանդարտ 5 կուրսերով։ */
-  create(input: unknown, id: string = createId()): FacultyWithCohorts {
+  /** Քանի՞ սևագիր ֆակուլտետ և կուրս կա (վահանակի ցուցիչի համար)։ */
+  countDrafts(): { faculties: number; cohorts: number } {
+    const draftFaculties = this.faculties.findAll().filter((faculty) => !faculty.isPublished)
+    const draftFacultyIds = new Set(draftFaculties.map((faculty) => faculty.id))
+    return {
+      faculties: draftFaculties.length,
+      cohorts: this.cohorts
+        .findAll()
+        .filter((cohort) => !cohort.isPublished && !draftFacultyIds.has(cohort.facultyId)).length,
+    }
+  }
+
+  /**
+   * Ստեղծում է ֆակուլտետ՝ ստանդարտ 5 կուրսերով։ Նոր ֆակուլտետը սևագիր է.
+   * այն չի երևում ոչ ուսանողների, ոչ էլ ֆակուլտետների ադմինների մոտ՝ մինչև հրապարակումը։
+   */
+  create(input: unknown, id: string = createId(), isPublished = false): FacultyWithCohorts {
     const data = this.parseInput(input)
     if (this.faculties.findByName(data.name)) throw conflict(`«${data.name}» ֆակուլտետն արդեն գոյություն ունի`)
 
     return this.db.transaction(() => {
-      const faculty: Faculty = { id, ...data, sortOrder: this.faculties.nextSortOrder(), createdAt: nowIso() }
+      const faculty: Faculty = {
+        id,
+        ...data,
+        sortOrder: this.faculties.nextSortOrder(),
+        isPublished,
+        createdAt: nowIso(),
+      }
       this.faculties.insert(faculty)
       DEFAULT_YEAR_COHORTS.forEach((name, index) =>
         this.cohorts.insert({
@@ -60,10 +111,11 @@ export class FacultiesService {
           name,
           kind: 'year',
           sortOrder: index + 1,
+          isPublished,
           settings: createDefaultCohortSettings(),
         }),
       )
-      return this.getById(faculty.id)
+      return this.getById(faculty.id, { role: 'SUPER_ADMIN' } as AuthUser)
     })
   }
 
@@ -74,7 +126,7 @@ export class FacultiesService {
     const sameName = this.faculties.findByName(data.name)
     if (sameName && sameName.id !== id) throw conflict(`«${data.name}» ֆակուլտետն արդեն գոյություն ունի`)
     this.faculties.update({ ...faculty, ...data })
-    return this.getById(id)
+    return this.getById(id, { role: 'SUPER_ADMIN' } as AuthUser)
   }
 
   delete(id: string): void {

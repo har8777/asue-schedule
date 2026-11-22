@@ -93,7 +93,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
     curriculumService,
     changeLogRepository,
   )
-  const reportsService = new ReportsService(lessonsRepository, catalogRepository, facultiesRepository)
+  const reportsService = new ReportsService(lessonsRepository, catalogRepository, facultiesRepository, cohortsRepository)
   const backupService = new BackupService({
     db,
     faculties: facultiesRepository,

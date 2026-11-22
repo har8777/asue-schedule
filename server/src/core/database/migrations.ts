@@ -111,6 +111,16 @@ const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 5,
+    name: 'faculty-cohort-publishing',
+    // Նոր ֆակուլտետն ու կուրսը մնում են սևագիր՝ մինչև գլխավոր ադմինի հրապարակումը։
+    // Առկա տվյալները մնում են հրապարակված, որպեսզի ոչինչ չանհետանա։
+    sql: `
+      ALTER TABLE faculties ADD COLUMN is_published INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE cohorts ADD COLUMN is_published INTEGER NOT NULL DEFAULT 1;
+    `,
+  },
 ]
 
 /**

@@ -41,4 +41,8 @@ export const scheduleRequests = {
   deleteCohort: async (cohortId: string): Promise<void> => {
     await httpClient.delete(`/cohorts/${cohortId}`)
   },
+
+  /** Հրապարակում է կուրսը (կամ հետ բերում սևագրի)։ */
+  setCohortPublished: async (cohortId: string, isPublished: boolean): Promise<Cohort> =>
+    (await httpClient.post<Cohort>(`/cohorts/${cohortId}/${isPublished ? 'publish' : 'unpublish'}`)).data,
 }
