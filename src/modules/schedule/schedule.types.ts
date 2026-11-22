@@ -24,6 +24,8 @@ export interface Cohort {
   name: string
   kind: CohortKind
   sortOrder: number
+  /** Սևագիր կուրսը տեսնում է միայն գլխավոր ադմինը։ */
+  isPublished: boolean
   settings: CohortSettings
 }
 

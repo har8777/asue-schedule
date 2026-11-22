@@ -7,6 +7,7 @@ interface FacultyRow {
   short_name: string
   building: string
   sort_order: number
+  is_published: number
   created_at: string
 }
 
@@ -16,6 +17,7 @@ const toFaculty = (row: FacultyRow): Faculty => ({
   shortName: row.short_name,
   building: row.building,
   sortOrder: row.sort_order,
+  isPublished: row.is_published === 1,
   createdAt: row.created_at,
 })
 
@@ -46,23 +48,25 @@ export class FacultiesRepository {
 
   insert(faculty: Faculty): void {
     this.db.run(
-      'INSERT INTO faculties (id, name, short_name, building, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO faculties (id, name, short_name, building, sort_order, is_published, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       faculty.id,
       faculty.name,
       faculty.shortName,
       faculty.building,
       faculty.sortOrder,
+      faculty.isPublished ? 1 : 0,
       faculty.createdAt,
     )
   }
 
   update(faculty: Faculty): void {
     this.db.run(
-      'UPDATE faculties SET name = ?, short_name = ?, building = ?, sort_order = ? WHERE id = ?',
+      'UPDATE faculties SET name = ?, short_name = ?, building = ?, sort_order = ?, is_published = ? WHERE id = ?',
       faculty.name,
       faculty.shortName,
       faculty.building,
       faculty.sortOrder,
+      faculty.isPublished ? 1 : 0,
       faculty.id,
     )
   }

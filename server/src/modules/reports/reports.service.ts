@@ -1,6 +1,7 @@
 import { notFound } from '../../core/http/http-error.ts'
 import { normalizeName } from '../../core/utils/id.ts'
 import type { CatalogRepository } from '../catalog/catalog.repository.ts'
+import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import { detectAllConflicts } from '../lessons/conflict-detector.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
@@ -41,18 +42,40 @@ export class ReportsService {
   private readonly lessons: LessonsRepository
   private readonly catalog: CatalogRepository
   private readonly faculties: FacultiesRepository
+  private readonly cohorts: CohortsRepository
 
-  constructor(lessons: LessonsRepository, catalog: CatalogRepository, faculties: FacultiesRepository) {
+  constructor(
+    lessons: LessonsRepository,
+    catalog: CatalogRepository,
+    faculties: FacultiesRepository,
+    cohorts: CohortsRepository,
+  ) {
     this.lessons = lessons
     this.catalog = catalog
     this.faculties = faculties
+    this.cohorts = cohorts
+  }
+
+  /** Հրապարակված կուրսերի id-ները (սևագիրը ուսանողների մոտ չի երևում)։ */
+  private publishedCohortIds(): Set<string> {
+    const publishedFaculties = new Set(
+      this.faculties.findAll().filter((faculty) => faculty.isPublished).map((faculty) => faculty.id),
+    )
+    return new Set(
+      this.cohorts
+        .findAll()
+        .filter((cohort) => cohort.isPublished && publishedFaculties.has(cohort.facultyId))
+        .map((cohort) => cohort.id),
+    )
   }
 
   /** Դասախոսի անհատական դասացուցակը բոլոր ֆակուլտետներից։ */
-  lecturerSchedule(name: string): LessonPlacement[] {
+  lecturerSchedule(name: string, includeDrafts = false): LessonPlacement[] {
     const key = normalizeName(name)
+    const visible = includeDrafts ? null : this.publishedCohortIds()
     return this.lessons
       .findWithContext()
+      .filter((lesson) => !visible || visible.has(lesson.cohortId))
       .flatMap(toPlacements)
       .filter((placement) => placement.lecturers.some((lecturer) => normalizeName(lecturer) === key))
       .sort(byTime)

@@ -22,4 +22,11 @@ export const facultiesRequests = {
 
   clearAllLessons: async (): Promise<{ deleted: number }> =>
     (await httpClient.delete<{ deleted: number }>('/lessons')).data,
+
+  /** Հրապարակում է ֆակուլտետը իր կուրսերով (կամ հետ բերում սևագրի)։ */
+  setPublished: async (id: string, isPublished: boolean): Promise<FacultyWithCohorts> =>
+    (await httpClient.post<FacultyWithCohorts>(`/faculties/${id}/${isPublished ? 'publish' : 'unpublish'}`)).data,
+
+  draftsCount: async (): Promise<{ faculties: number; cohorts: number }> =>
+    (await httpClient.get<{ faculties: number; cohorts: number }>('/faculties/drafts/count')).data,
 }

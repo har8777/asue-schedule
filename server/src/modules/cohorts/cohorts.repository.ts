@@ -8,6 +8,7 @@ interface CohortRow {
   name: string
   kind: CohortKind
   sort_order: number
+  is_published: number
   settings: string
 }
 
@@ -25,6 +26,7 @@ const toCohort = (row: CohortRow): Cohort => ({
   name: row.name,
   kind: row.kind,
   sortOrder: row.sort_order,
+  isPublished: row.is_published === 1,
   settings: parseSettings(row.settings),
 })
 
@@ -64,22 +66,24 @@ export class CohortsRepository {
 
   insert(cohort: Cohort): void {
     this.db.run(
-      'INSERT INTO cohorts (id, faculty_id, name, kind, sort_order, settings) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO cohorts (id, faculty_id, name, kind, sort_order, is_published, settings) VALUES (?, ?, ?, ?, ?, ?, ?)',
       cohort.id,
       cohort.facultyId,
       cohort.name,
       cohort.kind,
       cohort.sortOrder,
+      cohort.isPublished ? 1 : 0,
       JSON.stringify(cohort.settings),
     )
   }
 
   update(cohort: Cohort): void {
     this.db.run(
-      'UPDATE cohorts SET name = ?, kind = ?, sort_order = ?, settings = ? WHERE id = ?',
+      'UPDATE cohorts SET name = ?, kind = ?, sort_order = ?, is_published = ?, settings = ? WHERE id = ?',
       cohort.name,
       cohort.kind,
       cohort.sortOrder,
+      cohort.isPublished ? 1 : 0,
       JSON.stringify(cohort.settings),
       cohort.id,
     )

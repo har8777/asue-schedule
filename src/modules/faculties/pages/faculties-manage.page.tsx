@@ -1,4 +1,4 @@
-import { Eraser, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Eraser, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '../../common/components/button.component'
@@ -13,6 +13,7 @@ import { getErrorMessage } from '../../common/http/http-error'
 import { facultiesRequests } from '../faculties.requests'
 import type { FacultyPayload, FacultyWithCohorts } from '../faculties.types'
 import { useFaculties } from '../hooks/use-faculties'
+import { PublishBanner } from '../components/publish-banner.component'
 
 interface FacultyFormModalProps {
   isOpen: boolean
@@ -83,6 +84,7 @@ export const FacultiesManagePage = () => {
   const confirm = useConfirm()
   const { data, error, isLoading, reload } = useFaculties()
   const [editing, setEditing] = useState<FacultyWithCohorts | null>(null)
+  const [publishingId, setPublishingId] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
 
   const openForm = (faculty: FacultyWithCohorts | null) => {
@@ -123,6 +125,34 @@ export const FacultiesManagePage = () => {
     }
   }
 
+  /** Հրապարակում է ֆակուլտետը իր կուրսերով կամ հետ բերում սևագրի։ */
+  const togglePublished = async (faculty: FacultyWithCohorts) => {
+    if (faculty.isPublished) {
+      const isConfirmed = await confirm({
+        title: `Հանե՞լ «${faculty.name}»-ը հրապարակումից`,
+        message: 'Ֆակուլտետը և նրա կուրսերը կդադարեն երևալ ուսանողների և ֆակուլտետի ադմինների մոտ։ Տվյալները չեն ջնջվի։',
+        confirmText: 'Հանել հրապարակումից',
+        isDanger: true,
+      })
+      if (!isConfirmed) return
+    }
+    setPublishingId(faculty.id)
+    try {
+      await facultiesRequests.setPublished(faculty.id, !faculty.isPublished)
+      void reload()
+      toast.success(faculty.isPublished ? 'Ֆակուլտետը հանվեց հրապարակումից' : 'Ֆակուլտետը հրապարակվեց իր կուրսերով')
+    } catch (publishError) {
+      toast.error(getErrorMessage(publishError))
+    } finally {
+      setPublishingId('')
+    }
+  }
+
+  const draftFaculties = data?.filter((faculty) => !faculty.isPublished) ?? []
+  const draftCohorts = (data ?? []).flatMap((faculty) =>
+    faculty.isPublished ? faculty.cohorts.filter((cohort) => !cohort.isPublished) : [],
+  )
+
   return (
     <>
       <PageHeader
@@ -133,6 +163,8 @@ export const FacultiesManagePage = () => {
           </Button>
         }
       />
+      <PublishBanner faculties={draftFaculties.length} cohorts={draftCohorts.length} />
+
       {isLoading && !data && <PageLoader />}
       {error && <ErrorState message={error} onRetry={reload} />}
 
@@ -148,9 +180,24 @@ export const FacultiesManagePage = () => {
                 <Badge>{faculty.shortName}</Badge>
                 <Badge>{faculty.cohorts.length} կուրս/ծրագիր</Badge>
                 {faculty.building && <Badge>{faculty.building}</Badge>}
+                {!faculty.isPublished && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    <EyeOff className="size-3" />
+                    Սևագիր
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex gap-1">
+              <Button
+                variant={faculty.isPublished ? 'ghost' : 'success'}
+                size="sm"
+                icon={faculty.isPublished ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                isLoading={publishingId === faculty.id}
+                onClick={() => togglePublished(faculty)}
+              >
+                {faculty.isPublished ? 'Թաքցնել' : 'Հրապարակել'}
+              </Button>
               <Button variant="ghost" size="sm" icon={<Pencil className="size-4" />} onClick={() => openForm(faculty)}>
                 Խմբագրել
               </Button>

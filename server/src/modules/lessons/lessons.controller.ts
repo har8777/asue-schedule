@@ -6,7 +6,7 @@ import { parseLessonKey, parseSaveLessonInput } from './lessons.validation.ts'
 
 export const createLessonsController = (lessonsService: LessonsService, guards: AuthGuards): Router =>
   new Router('/cohorts/:cohortId')
-    .get('/schedule', (ctx) => lessonsService.getSchedule(ctx.params.cohortId))
+    .get('/schedule', guards.identify, (ctx) => lessonsService.getSchedule(ctx.params.cohortId, ctx.user))
     .get('/occupancy', guards.authenticate, (ctx) => {
       const { cohort } = lessonsService.getCohortContext(ctx.params.cohortId)
       return lessonsService.getOccupancy(

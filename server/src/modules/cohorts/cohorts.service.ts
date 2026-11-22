@@ -2,7 +2,7 @@ import type { Database } from '../../core/database/database.ts'
 import { badRequest, conflict, notFound } from '../../core/http/http-error.ts'
 import { createId } from '../../core/utils/id.ts'
 import { asRecord, requireArray, requireOneOf, requireString } from '../../core/validation/validators.ts'
-import { assertFacultyAccess } from '../auth/auth.guards.ts'
+import { assertFacultyAccess, isSuperAdmin } from '../auth/auth.guards.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
@@ -57,6 +57,25 @@ export class CohortsService {
     return cohort
   }
 
+  /** Սևագիր կուրսը տեսնում է միայն գլխավոր ադմինը. մնացածի համար այն չկա։ */
+  getVisible(id: string, user: AuthUser | null): Cohort {
+    const cohort = this.getById(id)
+    if (!isSuperAdmin(user) && !this.isVisible(cohort)) throw notFound('Կուրսը չի գտնվել')
+    return cohort
+  }
+
+  /** Կուրսը հրապարակված է, եթե և՛ ինքը, և՛ իր ֆակուլտետը հրապարակված են։ */
+  isVisible(cohort: Cohort): boolean {
+    return cohort.isPublished && (this.faculties.findById(cohort.facultyId)?.isPublished ?? false)
+  }
+
+  setPublished(id: string, isPublished: boolean): Cohort {
+    const cohort = this.getById(id)
+    const updated = { ...cohort, isPublished }
+    this.cohorts.update(updated)
+    return updated
+  }
+
   create(user: AuthUser, facultyId: string, input: unknown): Cohort {
     assertFacultyAccess(user, facultyId)
     if (!this.faculties.findById(facultyId)) throw notFound('Ֆակուլտետը չի գտնվել')
@@ -70,6 +89,8 @@ export class CohortsService {
       name,
       kind: body.kind === undefined ? 'program' : requireOneOf(body.kind, COHORT_KINDS, 'Տեսակ'),
       sortOrder: this.cohorts.nextSortOrder(facultyId),
+      // Նոր կուրսը սևագիր է՝ մինչև գլխավոր ադմինի հրապարակումը
+      isPublished: false,
       settings: createDefaultCohortSettings(),
     }
     this.cohorts.insert(cohort)

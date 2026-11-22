@@ -104,6 +104,8 @@ export class BackupService {
         shortName: typeof item.shortName === 'string' ? item.shortName : '',
         building: typeof item.building === 'string' ? item.building : '',
         sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : 0,
+        // Հին պահուստներում դաշտը չկա. այդ տվյալները արդեն հրապարակված էին
+        isPublished: item.isPublished !== false,
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : nowIso(),
       }
     })
@@ -115,6 +117,7 @@ export class BackupService {
         name: requireString(item.name, 'Անվանում', { max: 80 }),
         kind: requireOneOf(item.kind, ['year', 'program'] as const, 'Տեսակ'),
         sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : 0,
+        isPublished: item.isPublished !== false,
         settings: cohortsService.parseSettings(item.settings),
       }
     })
@@ -175,7 +178,7 @@ export class BackupService {
       const resolveCohort = (cell: LegacyCell): Cohort => {
         let faculty = faculties.findByName(cell.facultyName)
         if (!faculty) {
-          faculty = facultiesService.create({ name: cell.facultyName })
+          faculty = facultiesService.create({ name: cell.facultyName }, undefined, true)
           createdFaculties.add(faculty.id)
         }
         const key = `${faculty.id}|${cell.cohortName}`
@@ -189,6 +192,7 @@ export class BackupService {
             name: cell.cohortName,
             kind: /կուրս/.test(cell.cohortName) ? 'year' : 'program',
             sortOrder: cohorts.nextSortOrder(faculty.id),
+            isPublished: true,
             settings: { streams: [1, 2, 3, 4].map(createStream), days: DAY_KEYS.slice(0, 5), daySlotStart: {} },
           }
           cohorts.insert(cohort)

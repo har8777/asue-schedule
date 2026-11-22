@@ -7,6 +7,8 @@ export interface Faculty {
   /** Մասնաշենք։ Լսարանների բախումը ստուգվում է նույն մասնաշենքի ներսում։ */
   building: string
   sortOrder: number
+  /** Սևագիր ֆակուլտետը տեսնում է միայն գլխավոր ադմինը։ */
+  isPublished: boolean
   createdAt: string
 }
 

@@ -2,7 +2,7 @@ import type { Database } from '../../core/database/database.ts'
 import { conflict, notFound } from '../../core/http/http-error.ts'
 import { normalizeName } from '../../core/utils/id.ts'
 import { createId, nowIso } from '../../core/utils/id.ts'
-import { assertFacultyAccess } from '../auth/auth.guards.ts'
+import { assertFacultyAccess, isSuperAdmin } from '../auth/auth.guards.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import type { CatalogService } from '../catalog/catalog.service.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
@@ -70,8 +70,12 @@ export class LessonsService {
     return { cohort, faculty }
   }
 
-  getSchedule(cohortId: string): CohortSchedule {
+  /** Սևագիր կուրսի (կամ ֆակուլտետի) դասացուցակը տեսնում է միայն գլխավոր ադմինը։ */
+  getSchedule(cohortId: string, user: AuthUser | null = null): CohortSchedule {
     const { cohort, faculty } = this.getCohortContext(cohortId)
+    if (!isSuperAdmin(user) && (!cohort.isPublished || !faculty.isPublished)) {
+      throw notFound('Կուրսը չի գտնվել')
+    }
     return { faculty, cohort, lessons: this.lessons.findByCohort(cohortId) }
   }
 
