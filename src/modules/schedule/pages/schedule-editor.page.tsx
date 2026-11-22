@@ -13,12 +13,14 @@ import { useDocumentTitle } from '../../common/hooks/use-document-title'
 import { useHotkeys } from '../../common/hooks/use-hotkeys'
 import { getErrorMessage } from '../../common/http/http-error'
 import { ForbiddenPage } from '../../common/pages/status.page'
+import { useCohortPlan } from '../../curriculum/hooks/use-cohort-plan'
 import { useFaculty } from '../../faculties/hooks/use-faculties'
 import { CohortSettingsModal } from '../components/cohort-settings-modal.component'
 import { LessonEditorModal, type LessonEditTarget } from '../components/lesson-editor-modal.component'
 import { ScheduleBoard } from '../components/schedule-board.component'
 import { ScheduleExportMenu } from '../components/schedule-export-menu.component'
 import { ScheduleHeader } from '../components/schedule-header.component'
+import { ScheduleSectionTabs } from '../components/schedule-section-tabs.component'
 import { useCohortSchedule } from '../hooks/use-cohort-schedule'
 import { useScheduleHistory } from '../hooks/use-schedule-history'
 import { scheduleRequests } from '../schedule.requests'
@@ -37,6 +39,7 @@ export const ScheduleEditorPage = () => {
     () => (facultyId ? catalogRequests.getForFaculty(facultyId) : Promise.resolve(EMPTY_CATALOG)),
     [facultyId],
   )
+  const plan = useCohortPlan(cohortId ?? '')
   const [editTarget, setEditTarget] = useState<LessonEditTarget | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -79,6 +82,11 @@ export const ScheduleEditorPage = () => {
 
   return (
     <>
+      <ScheduleSectionTabs
+        className="print-hidden"
+        scheduleTo={APP_ROUTES.admin.editor(schedule.cohort.id)}
+        examsTo={APP_ROUTES.admin.examsEditor(schedule.cohort.id)}
+      />
       <ScheduleHeader
         facultyName={schedule.faculty.name}
         cohortName={schedule.cohort.name}
@@ -120,6 +128,8 @@ export const ScheduleEditorPage = () => {
       <LessonEditorModal
         cohort={schedule.cohort}
         catalog={catalog ?? EMPTY_CATALOG}
+        planSubjects={plan.data?.published?.subjects ?? []}
+        lessons={schedule.lessons}
         target={editTarget}
         onClose={() => setEditTarget(null)}
         onChanged={handleLessonChanged}

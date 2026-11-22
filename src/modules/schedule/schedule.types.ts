@@ -1,4 +1,5 @@
 import type { Faculty } from '../faculties/faculties.types'
+import type { SlotTime } from '../settings/settings.types'
 import type { DayKey, SlotKey } from './schedule.constants'
 
 export type CohortKind = 'year' | 'program'
@@ -12,6 +13,8 @@ export interface CohortSettings {
   streams: CohortStream[]
   days: DayKey[]
   daySlotStart: Partial<Record<DayKey, SlotKey>>
+  /** Ուսումնական պլանով հաստատված ժամերը՝ ընդհանուր կարգավորումները փոխարինող։ */
+  slotTimes?: Partial<Record<SlotKey, SlotTime>>
 }
 
 /** Կուրս (օր.՝ «1-ին կուրս») կամ առանձին ծրագիր (օր.՝ «Սերվիս»)։ */

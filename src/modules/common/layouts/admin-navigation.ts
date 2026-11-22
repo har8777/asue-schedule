@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Building2,
+  ClipboardList,
   Database,
   DoorOpen,
   History,
@@ -35,6 +36,7 @@ export const ADMIN_NAVIGATION: AdminNavSection[] = [
       { to: APP_ROUTES.admin.conflicts, label: 'Խաչվող դասեր', icon: TriangleAlert, roles: ADMIN_ROLES },
       { to: APP_ROUTES.admin.freeRooms, label: 'Ազատ լսարաններ', icon: DoorOpen, roles: ADMIN_ROLES },
       { to: APP_ROUTES.admin.changeLog, label: 'Փոփոխություններ', icon: History, roles: ADMIN_ROLES },
+      { to: APP_ROUTES.admin.curriculum, label: 'Ուսումնական պլան', icon: ClipboardList, roles: ADMIN_ROLES },
       { to: APP_ROUTES.admin.catalog, label: 'Տեղեկատու', icon: BookOpen, roles: ADMIN_ROLES },
     ],
   },

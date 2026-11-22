@@ -30,6 +30,10 @@ export const appRouter = createBrowserRouter(
       children: [
         { index: true, element: <FacultiesPage /> },
         { path: 'schedule/:cohortId', element: <ScheduleViewPage /> },
+        {
+          path: 'schedule/:cohortId/exams',
+          element: lazyPage(() => import('../modules/exams/pages/exam-schedule.page'), (m) => m.ExamSchedulePage),
+        },
         { path: 'lecturers', element: <LecturerSchedulePage /> },
         { path: '403', element: <ForbiddenPage /> },
         {
@@ -49,6 +53,14 @@ export const appRouter = createBrowserRouter(
             {
               path: 'schedule/:cohortId',
               element: lazyPage(() => import('../modules/schedule/pages/schedule-editor.page'), (m) => m.ScheduleEditorPage),
+            },
+            {
+              path: 'schedule/:cohortId/exams',
+              element: lazyPage(() => import('../modules/exams/pages/exam-schedule.page'), (m) => () => <m.ExamSchedulePage isAdmin />),
+            },
+            {
+              path: 'curriculum',
+              element: lazyPage(() => import('../modules/curriculum/pages/curriculum.page'), (m) => m.CurriculumPage),
             },
             { path: 'conflicts', element: lazyPage(() => import('../modules/reports/pages/conflicts.page'), (m) => m.ConflictsPage) },
             { path: 'free-rooms', element: lazyPage(() => import('../modules/reports/pages/free-rooms.page'), (m) => m.FreeRoomsPage) },

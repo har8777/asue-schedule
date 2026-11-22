@@ -5,6 +5,7 @@ export type ChangeLogAction =
   | 'lesson.delete'
   | 'cohort.clear'
   | 'cohort.settings'
+  | 'plan.publish'
   | 'faculty.clear'
   | 'schedule.clear-all'
   | 'backup.restore'

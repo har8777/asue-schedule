@@ -2,12 +2,15 @@
 export const APP_ROUTES = {
   home: '/',
   schedule: (cohortId: string) => `/schedule/${cohortId}`,
+  exams: (cohortId: string) => `/schedule/${cohortId}/exams`,
   lecturers: '/lecturers',
   login: '/login',
   forbidden: '/403',
   admin: {
     dashboard: '/admin',
     editor: (cohortId: string) => `/admin/schedule/${cohortId}`,
+    examsEditor: (cohortId: string) => `/admin/schedule/${cohortId}/exams`,
+    curriculum: '/admin/curriculum',
     conflicts: '/admin/conflicts',
     freeRooms: '/admin/free-rooms',
     changeLog: '/admin/change-log',

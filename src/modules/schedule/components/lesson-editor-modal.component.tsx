@@ -10,7 +10,11 @@ import { Modal } from '../../common/components/modal.component'
 import { TagInput } from '../../common/components/tag-input.component'
 import { useToast } from '../../common/components/toast.context'
 import { useAsyncData } from '../../common/hooks/use-async-data'
+import { formatEntries } from '../../curriculum/curriculum.constants'
+import type { PlanSubject } from '../../curriculum/curriculum.types'
+import { buildSubjectQuotas, findQuota } from '../../curriculum/curriculum.utils'
 import { getErrorMessage } from '../../common/http/http-error'
+import { cn } from '../../common/utils/classnames'
 import { useConflictCheck } from '../hooks/use-conflict-check'
 import { DAY_LABELS, MAX_LESSON_PARTS, partLabel } from '../schedule.constants'
 import { scheduleRequests } from '../schedule.requests'
@@ -33,6 +37,9 @@ export interface LessonEditTarget {
 interface LessonEditorModalProps {
   cohort: Cohort
   catalog: FacultyCatalog
+  /** Հաստատված ուսումնական պլանի առարկաները՝ ժամաքանակի սահմանաչափի համար։ */
+  planSubjects: PlanSubject[]
+  lessons: Lesson[]
   target: LessonEditTarget | null
   onClose: () => void
   /** Կանչվում է հաջող պահպանումից/ջնջումից հետո՝ նախկին և նոր արժեքներով (undo-ի համար)։ */
@@ -53,7 +60,7 @@ const cleanParts = (parts: LessonPart[]): LessonPart[] =>
     return subject ? { subject, lecturers: part.lecturers, rooms: part.rooms } : { ...EMPTY_PART }
   })
 
-export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged }: LessonEditorModalProps) => {
+export const LessonEditorModal = ({ cohort, catalog, planSubjects, lessons, target, onClose, onChanged }: LessonEditorModalProps) => {
   const toast = useToast()
   const confirm = useConfirm()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -77,11 +84,11 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
 
   const catalogNames = useMemo(
     () => ({
-      subjects: catalog.subjects.map((item) => item.name),
+      subjects: [...new Set([...planSubjects.map((item) => item.subject), ...catalog.subjects.map((item) => item.name)])],
       lecturers: catalog.lecturers.map((item) => item.name),
       rooms: catalog.rooms.map((item) => item.name),
     }),
-    [catalog],
+    [catalog, planSubjects],
   )
 
   if (!target) return null
@@ -89,6 +96,10 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
   const stream = cohort.settings.streams.find((item) => item.id === key.streamId)
   const hasConflicts = conflicts.length > 0
   const currentParts = cleanParts(watchedParts)
+  // Ուսումնական պլանի ժամաքանակից ավել նշել հնարավոր չէ
+  const quotas = buildSubjectQuotas(planSubjects, lessons, key, currentParts)
+  const overQuota = [...quotas.values()].filter((quota) => quota.isOver)
+  const isBlocked = hasConflicts || overQuota.length > 0
 
   const changeMode = (nextMode: LessonMode) => {
     setValue('mode', nextMode)
@@ -165,8 +176,8 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
             type="submit"
             form="lesson-editor-form"
             isLoading={formState.isSubmitting}
-            disabled={hasConflicts}
-            title={hasConflicts ? 'Ուղղեք բախումները՝ պահպանելու համար' : undefined}
+            disabled={isBlocked}
+            title={isBlocked ? 'Ուղղեք նշված խնդիրները՝ պահպանելու համար' : undefined}
           >
             Պահպանել
           </Button>
@@ -186,6 +197,7 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
 
         {fields.map((field, index) => {
           const hasSubject = Boolean(watchedParts[index]?.subject?.trim())
+          const quota = findQuota(quotas, watchedParts[index]?.subject ?? '')
           return (
             <fieldset
               key={field.id}
@@ -223,6 +235,20 @@ export const LessonEditorModal = ({ cohort, catalog, target, onClose, onChanged 
                   )}
                 />
               </FormField>
+              {quota && (
+                <p
+                  className={cn(
+                    'rounded-lg px-2.5 py-1.5 text-xs font-semibold',
+                    quota.isOver
+                      ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                  )}
+                >
+                  {quota.hours} ժամ = {formatEntries(quota.limit)} մուտք։ {stream?.name ?? 'Հոսք'}՝ լրացված է{' '}
+                  {formatEntries(quota.used)}, այս վանդակով՝ {formatEntries(quota.used + quota.added)}։
+                  {quota.isOver && ' Ժամաքանակը գերազանցված է։'}
+                </p>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <FormField
                   label="Դասախոս(ներ)"

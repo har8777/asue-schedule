@@ -96,6 +96,21 @@ const MIGRATIONS: Migration[] = [
     // Ֆակուլտետները առանձին մասնաշենքերում են. դատարկ մասնաշենքը փոխարինվում է ֆակուլտետի անունով
     sql: `UPDATE faculties SET building = name WHERE building = '';`,
   },
+  {
+    version: 4,
+    name: 'cohort-curriculum-plans',
+    // Ուսումնական պլան. սևագիրը տեսնում է միայն super admin-ը, հաստատվածը՝ բոլորը
+    sql: `
+      CREATE TABLE cohort_plans (
+        cohort_id TEXT PRIMARY KEY REFERENCES cohorts(id) ON DELETE CASCADE,
+        draft TEXT NOT NULL,
+        published TEXT,
+        updated_at TEXT NOT NULL,
+        published_at TEXT,
+        published_by TEXT
+      );
+    `,
+  },
 ]
 
 /**

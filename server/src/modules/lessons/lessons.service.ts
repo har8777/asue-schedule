@@ -7,6 +7,7 @@ import type { AuthUser } from '../auth/auth.types.ts'
 import type { CatalogService } from '../catalog/catalog.service.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
 import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
+import type { CurriculumService } from '../curriculum/curriculum.service.ts'
 import type { Cohort } from '../cohorts/cohorts.types.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { Faculty } from '../faculties/faculties.types.ts'
@@ -40,6 +41,7 @@ export class LessonsService {
   private readonly cohorts: CohortsRepository
   private readonly faculties: FacultiesRepository
   private readonly catalog: CatalogService
+  private readonly curriculum: CurriculumService
   private readonly changeLog: ChangeLogRepository
 
   constructor(
@@ -48,6 +50,7 @@ export class LessonsService {
     cohorts: CohortsRepository,
     faculties: FacultiesRepository,
     catalog: CatalogService,
+    curriculum: CurriculumService,
     changeLog: ChangeLogRepository,
   ) {
     this.db = db
@@ -55,6 +58,7 @@ export class LessonsService {
     this.cohorts = cohorts
     this.faculties = faculties
     this.catalog = catalog
+    this.curriculum = curriculum
     this.changeLog = changeLog
   }
 
@@ -141,6 +145,8 @@ export class LessonsService {
     if (conflicts.length > 0) {
       throw conflict('Դասախոսը կամ լսարանը այդ ժամին արդեն զբաղված է։ Ընտրեք այլ տարբերակ։', { conflicts })
     }
+    // Հաստատված ուսումնական պլանի ժամաքանակից ավել նշել հնարավոր չէ
+    this.curriculum.assertWithinHours(cohort, input)
 
     return this.db.transaction(() => {
       const existing = this.lessons.findOne(input)

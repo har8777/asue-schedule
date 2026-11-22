@@ -1,5 +1,7 @@
 import { downloadText, toFileName } from '../../common/utils/download'
 import type { PublicSettings } from '../../settings/settings.types'
+import type { CohortSettings } from '../schedule.types'
+import { resolveSlotTime } from '../schedule.utils'
 import { DAY_KEYS, type DayKey, type SlotKey } from '../schedule.constants'
 
 /** Մեկ կրկնվող իրադարձություն (դաս կամ դասի մաս)։ */
@@ -39,7 +41,12 @@ const resolveSemesterMonday = (settings: PublicSettings): Date => {
  * Ստեղծում է .ics ֆայլ (Google / Apple / Outlook օրացույցների համար)։ Բաժանված դասի
  * մասերը դասաժամի մեջ դասավորվում են հաջորդաբար, ինչպես նախորդ տարբերակում։
  */
-export const buildIcsCalendar = (lessons: CalendarLesson[], settings: PublicSettings, calendarName: string): string => {
+export const buildIcsCalendar = (
+  lessons: CalendarLesson[],
+  settings: PublicSettings,
+  calendarName: string,
+  cohortSettings?: CohortSettings,
+): string => {
   const monday = resolveSemesterMonday(settings)
   const stamp = `${formatDate(new Date())}T000000Z`
   const lines = [
@@ -52,7 +59,7 @@ export const buildIcsCalendar = (lessons: CalendarLesson[], settings: PublicSett
   ]
 
   for (const lesson of lessons) {
-    const slotTime = settings.slotTimes[lesson.slot]
+    const slotTime = cohortSettings ? resolveSlotTime(cohortSettings, settings.slotTimes, lesson.slot) : settings.slotTimes[lesson.slot]
     if (!slotTime || !lesson.summary) continue
     const start = toMinutes(slotTime.start)
     const segment = Math.floor((toMinutes(slotTime.end) - start) / lesson.partsCount)
@@ -82,5 +89,14 @@ export const buildIcsCalendar = (lessons: CalendarLesson[], settings: PublicSett
   return lines.join('\r\n')
 }
 
-export const downloadIcsCalendar = (lessons: CalendarLesson[], settings: PublicSettings, name: string): void =>
-  downloadText(buildIcsCalendar(lessons, settings, name), `${toFileName(name)}.ics`, 'text/calendar;charset=utf-8')
+export const downloadIcsCalendar = (
+  lessons: CalendarLesson[],
+  settings: PublicSettings,
+  name: string,
+  cohortSettings?: CohortSettings,
+): void =>
+  downloadText(
+    buildIcsCalendar(lessons, settings, name, cohortSettings),
+    `${toFileName(name)}.ics`,
+    'text/calendar;charset=utf-8',
+  )

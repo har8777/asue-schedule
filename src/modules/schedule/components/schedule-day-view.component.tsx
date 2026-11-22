@@ -5,7 +5,7 @@ import { cn } from '../../common/utils/classnames'
 import { useSettings } from '../../settings/settings.context'
 import { DAY_LABELS, DAY_SHORT_LABELS, type DayKey } from '../schedule.constants'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
-import { getDaySlots, lessonKeyId, pickInitialDay } from '../schedule.utils'
+import { getDaySlots, lessonKeyId, pickInitialDay, resolveSlotTime } from '../schedule.utils'
 import { LessonContent } from './lesson-content.component'
 
 interface ScheduleDayViewProps {
@@ -90,7 +90,7 @@ export const ScheduleDayView = ({ cohort, lessons, isEditable = false, onCellCli
         {slots.map((slot) => {
           const key: LessonKey = { day, slot, streamId }
           const lesson = lessons.get(lessonKeyId(key))
-          const time = settings.slotTimes[slot]
+          const time = resolveSlotTime(cohort.settings, settings.slotTimes, slot)
           const body = (
             <>
               <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-slate-100 py-2 dark:border-slate-800">
