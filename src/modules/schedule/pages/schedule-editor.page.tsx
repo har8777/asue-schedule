@@ -150,6 +150,7 @@ export const ScheduleEditorPage = () => {
 
       <ScheduleBoard
         cohort={schedule.cohort}
+        facultyName={schedule.faculty.name}
         lessons={lessonMap}
         title={`${schedule.faculty.name} — ${schedule.cohort.name}`}
         isEditable
