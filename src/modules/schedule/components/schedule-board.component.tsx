@@ -1,10 +1,11 @@
 import { FileText, Rows3, Table2 } from 'lucide-react'
-import { useState } from 'react'
-import { SegmentedControl } from '../../common/components/form-controls.component'
+import { useEffect, useState } from 'react'
+import { SegmentedControl, SelectInput } from '../../common/components/form-controls.component'
 import { useIsDesktop } from '../../common/hooks/use-media-query'
 import { cn } from '../../common/utils/classnames'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
 import { OfficialScheduleTable } from './official-schedule-table.component'
+import { PartTimeScheduleTable } from './part-time-schedule-table.component'
 import { ScheduleDayView } from './schedule-day-view.component'
 import { ScheduleTable } from './schedule-table.component'
 
@@ -47,6 +48,15 @@ export const ScheduleBoard = ({
 }: ScheduleBoardProps) => {
   const isDesktop = useIsDesktop()
   const [view, setView] = useState<ScheduleView>(defaultView)
+  const [streamId, setStreamId] = useState(cohort.settings.streams[0]?.id ?? '')
+  // Հեռակա ուսուցման դասացուցակը կազմվում է մեկ հոսքի համար՝ առանձին թերթով
+  const isPartTime = cohort.studyForm === 'part_time'
+
+  useEffect(() => {
+    if (!cohort.settings.streams.some((stream) => stream.id === streamId)) {
+      setStreamId(cohort.settings.streams[0]?.id ?? '')
+    }
+  }, [cohort, streamId])
 
   // Հեռախոսում «Օրերով» տեսքը ավելի հարմար է, համակարգչում՝ ավելորդ
   const options = [
@@ -60,6 +70,20 @@ export const ScheduleBoard = ({
     <div className="flex flex-col gap-3">
       <div className="print-hidden flex flex-wrap items-center gap-2">
         <SegmentedControl<ScheduleView> className="self-start" value={activeView} onChange={setView} options={options} />
+        {activeView === 'official' && isPartTime && cohort.settings.streams.length > 1 && (
+          <SelectInput
+            value={streamId}
+            onChange={(event) => setStreamId(event.target.value)}
+            className="sm:w-48"
+            aria-label="Հոսք"
+          >
+            {cohort.settings.streams.map((stream) => (
+              <option key={stream.id} value={stream.id}>
+                {stream.name}
+              </option>
+            ))}
+          </SelectInput>
+        )}
       </div>
 
       {activeView === 'days' && (
@@ -74,7 +98,17 @@ export const ScheduleBoard = ({
           <h2 className="text-lg font-bold">{title}</h2>
           {subtitle && <p className="text-sm">{subtitle}</p>}
         </div>
-        {activeView === 'official' ? (
+        {activeView === 'official' && isPartTime ? (
+          <PartTimeScheduleTable
+            cohort={cohort}
+            lessons={lessons}
+            streamId={streamId}
+            facultyName={facultyName}
+            deanName={deanName}
+            isEditable={isEditable}
+            onCellClick={onCellClick}
+          />
+        ) : activeView === 'official' ? (
           <OfficialScheduleTable
             cohort={cohort}
             lessons={lessons}

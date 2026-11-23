@@ -11,6 +11,8 @@ export interface CohortStream {
 
 export interface CohortSettings {
   streams: CohortStream[]
+  /** Մասնագիտությունը՝ պաշտոնական վերնագրում, օր.՝ «Կառավարում (ըստ ոլորտի)»։ */
+  programName?: string
   days: DayKey[]
   daySlotStart: Partial<Record<DayKey, SlotKey>>
   /** Ուսումնական պլանով հաստատված ժամերը՝ ընդհանուր կարգավորումները փոխարինող։ */
@@ -18,6 +20,9 @@ export interface CohortSettings {
 }
 
 /** Կուրս (օր.՝ «1-ին կուրս») կամ առանձին ծրագիր (օր.՝ «Սերվիս»)։ */
+/** Ուսուցման ձևը. առկա (շաբաթական ձևաչափ) կամ հեռակա (շաբաթներով, ամսաթվերով)։ */
+export type StudyForm = 'full_time' | 'part_time'
+
 export interface Cohort {
   id: string
   facultyId: string
@@ -26,6 +31,7 @@ export interface Cohort {
   name: string
   kind: CohortKind
   sortOrder: number
+  studyForm: StudyForm
   /** Սևագիր կուրսը տեսնում է միայն գլխավոր ադմինը։ */
   isPublished: boolean
   settings: CohortSettings

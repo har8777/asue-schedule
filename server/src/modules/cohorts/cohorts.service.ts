@@ -1,7 +1,7 @@
 import type { Database } from '../../core/database/database.ts'
 import { badRequest, conflict, notFound } from '../../core/http/http-error.ts'
 import { createId } from '../../core/utils/id.ts'
-import { asRecord, requireArray, requireOneOf, requireString } from '../../core/validation/validators.ts'
+import { asRecord, requireArray, requireOneOf, requireString, optionalString } from '../../core/validation/validators.ts'
 import { assertFacultyAccess, isSuperAdmin } from '../auth/auth.guards.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
@@ -88,6 +88,7 @@ export class CohortsService {
       id: createId(),
       facultyId,
       divisionId,
+      studyForm: body.studyForm === 'part_time' ? 'part_time' : 'full_time',
       name,
       kind: body.kind === undefined ? 'program' : requireOneOf(body.kind, COHORT_KINDS, 'Տեսակ'),
       sortOrder: this.cohorts.nextSortOrder(facultyId),
@@ -117,7 +118,8 @@ export class CohortsService {
       body.settings === undefined
         ? cohort.settings
         : { ...this.parseSettings(body.settings), slotTimes: cohort.settings.slotTimes }
-    const updated: Cohort = { ...cohort, name, settings }
+    const studyForm = body.studyForm === undefined ? cohort.studyForm : body.studyForm === 'part_time' ? 'part_time' : 'full_time'
+    const updated: Cohort = { ...cohort, name, studyForm, settings }
 
     return this.db.transaction(() => {
       this.cohorts.update(updated)
@@ -171,7 +173,8 @@ export class CohortsService {
       if (slot !== '1-2') daySlotStart[dayKey] = slot
     }
 
-    return { streams, days, daySlotStart }
+    const programName = optionalString(body.programName, 'Մասնագիտություն', 150) ?? ''
+    return { streams, days, daySlotStart, programName }
   }
 
   private removeLessonsOutsideGrid(cohort: Cohort): number {

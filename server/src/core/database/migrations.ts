@@ -143,6 +143,23 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE faculties ADD COLUMN dean TEXT NOT NULL DEFAULT '';
     `,
   },
+  {
+    version: 7,
+    name: 'cohort-study-form',
+    // Առկա և հեռակա ուսուցման դասացուցակներն ունեն տարբեր ձևաչափ
+    sql: `ALTER TABLE cohorts ADD COLUMN study_form TEXT NOT NULL DEFAULT 'full_time';`,
+  },
+  {
+    version: 8,
+    name: 'detect-existing-part-time-cohorts',
+    // Արդեն ստեղծված «Հեռակա …» կուրսերը ստանում են հեռակա ուսուցման ձևաչափը
+    sql: `
+      UPDATE cohorts SET study_form = 'part_time'
+      WHERE study_form = 'full_time'
+        AND (name LIKE '%Հեռակա%'
+             OR division_id IN (SELECT id FROM faculty_divisions WHERE name LIKE '%Հեռակա%'));
+    `,
+  },
 ]
 
 /**
