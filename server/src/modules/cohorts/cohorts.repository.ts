@@ -9,7 +9,6 @@ interface CohortRow {
   name: string
   kind: CohortKind
   sort_order: number
-  study_form: string
   is_published: number
   settings: string
 }
@@ -29,7 +28,6 @@ const toCohort = (row: CohortRow): Cohort => ({
   name: row.name,
   kind: row.kind,
   sortOrder: row.sort_order,
-  studyForm: row.study_form === 'part_time' ? 'part_time' : 'full_time',
   isPublished: row.is_published === 1,
   settings: parseSettings(row.settings),
 })
@@ -70,15 +68,13 @@ export class CohortsRepository {
 
   insert(cohort: Cohort): void {
     this.db.run(
-      `INSERT INTO cohorts (id, faculty_id, division_id, name, kind, sort_order, study_form, is_published, settings)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      'INSERT INTO cohorts (id, faculty_id, division_id, name, kind, sort_order, is_published, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       cohort.id,
       cohort.facultyId,
       cohort.divisionId,
       cohort.name,
       cohort.kind,
       cohort.sortOrder,
-      cohort.studyForm,
       cohort.isPublished ? 1 : 0,
       JSON.stringify(cohort.settings),
     )
@@ -86,13 +82,11 @@ export class CohortsRepository {
 
   update(cohort: Cohort): void {
     this.db.run(
-      `UPDATE cohorts SET division_id = ?, name = ?, kind = ?, sort_order = ?, study_form = ?, is_published = ?, settings = ?
-       WHERE id = ?`,
+      'UPDATE cohorts SET division_id = ?, name = ?, kind = ?, sort_order = ?, is_published = ?, settings = ? WHERE id = ?',
       cohort.divisionId,
       cohort.name,
       cohort.kind,
       cohort.sortOrder,
-      cohort.studyForm,
       cohort.isPublished ? 1 : 0,
       JSON.stringify(cohort.settings),
       cohort.id,

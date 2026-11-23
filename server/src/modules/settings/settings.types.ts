@@ -15,8 +15,5 @@ export interface PublicSettings {
   approvalDate: string
   academicHeadLabel: string
   academicHeadName: string
-  /** Հեռակա ուսուցման դասացուցակի ստորագրության տողը։ */
-  partTimeHeadLabel: string
-  partTimeHeadName: string
   slotTimes: Record<SlotKey, SlotTime>
 }

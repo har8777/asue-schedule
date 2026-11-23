@@ -66,11 +66,11 @@ export const OfficialScheduleTable = ({
         <table className="w-full border-collapse text-[11px]">
           <thead>
             <tr>
-              <th rowSpan={2} className={cn(head, 'bg-brand-600 text-white')}>
+              <th rowSpan={2} className={cn(head, 'bg-red-700 text-white')}>
                 Օր
               </th>
               {streams.map((stream) => (
-                <th key={stream.id} colSpan={4} className={cn(head, 'bg-brand-600 text-white')}>
+                <th key={stream.id} colSpan={4} className={cn(head, 'bg-red-700 text-white')}>
                   {[facultyShortName, cohort.name, stream.name].filter(Boolean).join(' ')}
                 </th>
               ))}
@@ -78,10 +78,10 @@ export const OfficialScheduleTable = ({
             <tr>
               {streams.map((stream) => (
                 <Fragment key={stream.id}>
-                  <th className={cn(head, 'bg-brand-600 text-white')}>Ժամ</th>
-                  <th className={cn(head, 'bg-brand-600 text-white')}>Առարկա</th>
-                  <th className={cn(head, 'bg-brand-600 text-white')}>Դասախոսներ</th>
-                  <th className={cn(head, 'bg-brand-600 text-white')}>Լսարան</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Ժամ</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Առարկա</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Դասախոսներ</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Լսարան</th>
                 </Fragment>
               ))}
             </tr>

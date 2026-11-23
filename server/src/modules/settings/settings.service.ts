@@ -19,8 +19,6 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   approvalDate: '',
   academicHeadLabel: 'Ուսումնական բաժնի պետ',
   academicHeadName: '',
-  partTimeHeadLabel: 'Ակադեմիական կազմի սպասարկման բաժնի պետ',
-  partTimeHeadName: '',
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 
@@ -56,8 +54,6 @@ export class SettingsService {
       approvalDate: this.readText(body.approvalDate, current.approvalDate, 'Հաստատման ամսաթիվը', 40),
       academicHeadLabel: this.readText(body.academicHeadLabel, current.academicHeadLabel, 'Ուսումնական բաժնի պաշտոնը', 60),
       academicHeadName: this.readText(body.academicHeadName, current.academicHeadName, 'Ուսումնական բաժնի պետը', 80),
-      partTimeHeadLabel: this.readText(body.partTimeHeadLabel, current.partTimeHeadLabel, 'Հեռակայի բաժնի պաշտոնը', 80),
-      partTimeHeadName: this.readText(body.partTimeHeadName, current.partTimeHeadName, 'Հեռակայի բաժնի պետը', 80),
       slotTimes: body.slotTimes === undefined ? current.slotTimes : this.readSlotTimes(body.slotTimes),
     }
     this.repository.set(PUBLIC_SETTINGS_KEY, next)

@@ -58,14 +58,11 @@ export class DivisionsService {
       this.divisions.insert(division)
 
       if (withCohorts) {
-        // «Հեռակա» անվամբ բաժնի կուրսերը ստանում են հեռակա ուսուցման ձևաչափը
-        const studyForm = /հեռակա/i.test(name) ? 'part_time' : 'full_time'
         DEFAULT_YEAR_COHORTS.forEach((cohortName, index) =>
           this.cohorts.insert({
             id: createId(),
             facultyId,
             divisionId: division.id,
-            studyForm,
             name: `${name} ${cohortName}`,
             kind: 'year',
             sortOrder: 100 + index,
