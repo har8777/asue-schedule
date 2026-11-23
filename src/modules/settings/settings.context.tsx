@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS: PublicSettings = {
   approvalDate: '',
   academicHeadLabel: 'Ուսումնական բաժնի պետ',
   academicHeadName: '',
+  partTimeHeadLabel: 'Ակադեմիական կազմի սպասարկման բաժնի պետ',
+  partTimeHeadName: '',
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 
