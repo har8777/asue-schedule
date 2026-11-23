@@ -1,10 +1,9 @@
 import { Plus } from 'lucide-react'
 import { Fragment } from 'react'
 import { cn } from '../../common/utils/classnames'
-import { useSettings } from '../../settings/settings.context'
 import { DAY_LABELS } from '../schedule.constants'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
-import { getDaySlots, lessonKeyId, resolveSlotTime } from '../schedule.utils'
+import { getDaySlots, lessonKeyId } from '../schedule.utils'
 import { LessonContent } from './lesson-content.component'
 
 interface ScheduleTableProps {
@@ -16,7 +15,6 @@ interface ScheduleTableProps {
 
 /** Շաբաթական աղյուսակ. տողերը՝ օրեր և դասաժամեր, սյունակները՝ հոսքեր։ */
 export const ScheduleTable = ({ cohort, lessons, isEditable = false, onCellClick }: ScheduleTableProps) => {
-  const { settings } = useSettings()
   const { streams, days } = cohort.settings
 
   return (
@@ -47,7 +45,6 @@ export const ScheduleTable = ({ cohort, lessons, isEditable = false, onCellClick
               <Fragment key={day}>
                 {slots.map((slot, slotIndex) => {
                   const isLastSlot = slotIndex === slots.length - 1
-                  const time = resolveSlotTime(cohort.settings, settings.slotTimes, slot)
                   return (
                     <tr
                       key={`${day}-${slot}`}
@@ -68,13 +65,6 @@ export const ScheduleTable = ({ cohort, lessons, isEditable = false, onCellClick
                       )}
                       <td className="border-r border-slate-200 bg-slate-50/60 px-1 py-2 text-center align-middle dark:border-slate-700 dark:bg-slate-800/30">
                         <div className="font-mono text-xs font-bold">{slot}</div>
-                        {time && (
-                          <div className="text-[10px] leading-tight text-slate-400">
-                            {time.start}
-                            <br />
-                            {time.end}
-                          </div>
-                        )}
                       </td>
                       {streams.map((stream) => {
                         const key: LessonKey = { day, slot, streamId: stream.id }

@@ -17,7 +17,6 @@ export const FacultiesPage = () => {
   return (
     <>
       <section className="mb-6 rounded-3xl bg-gradient-to-br from-brand-900 to-brand-600 px-5 py-7 text-white shadow-lg sm:px-8 sm:py-10">
-        <p className="text-sm font-semibold text-blue-100">{settings.semesterLabel}</p>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-4xl">{settings.universityName} դասացուցակ</h1>
         <p className="mt-2 max-w-xl text-sm text-blue-100 sm:text-base">Ընտրեք ֆակուլտետը և կուրսը՝ շաբաթվա դասացուցակը դիտելու համար։</p>
       </section>

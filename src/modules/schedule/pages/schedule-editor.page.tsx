@@ -155,6 +155,7 @@ export const ScheduleEditorPage = () => {
         deanName={schedule.faculty.dean}
         lessons={lessonMap}
         title={`${schedule.faculty.name} — ${schedule.cohort.name}`}
+        defaultView="official"
         isEditable
         onCellClick={(key, lesson) => setEditTarget({ key, lesson })}
       />

@@ -81,6 +81,8 @@ export const ScheduleBoard = ({
             facultyName={facultyName}
             facultyShortName={facultyShortName}
             deanName={deanName}
+            isEditable={isEditable}
+            onCellClick={onCellClick}
           />
         ) : (
           <ScheduleTable cohort={cohort} lessons={lessons} isEditable={isEditable} onCellClick={onCellClick} />
