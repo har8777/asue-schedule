@@ -3,7 +3,8 @@ import { useSettings } from '../../settings/settings.context'
 import { cn } from '../../common/utils/classnames'
 import { DAY_LABELS } from '../schedule.constants'
 import { buildOfficialSheet, resolveAcademicYear } from '../schedule.official'
-import type { Cohort, Lesson } from '../schedule.types'
+import { lessonKeyId } from '../schedule.utils'
+import type { Cohort, Lesson, LessonKey } from '../schedule.types'
 
 interface OfficialScheduleTableProps {
   cohort: Cohort
@@ -13,6 +14,8 @@ interface OfficialScheduleTableProps {
   facultyShortName?: string
   /** Ֆակուլտետի դեկանի անունը՝ ստորագրության տողի համար։ */
   deanName?: string
+  isEditable?: boolean
+  onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
 }
 
 const cell = 'border border-slate-400 px-1.5 py-1 align-middle dark:border-slate-500'
@@ -29,9 +32,12 @@ export const OfficialScheduleTable = ({
   facultyName,
   facultyShortName,
   deanName,
+  isEditable,
+  onCellClick,
 }: OfficialScheduleTableProps) => {
   const { settings } = useSettings()
   const days = buildOfficialSheet(cohort, lessons)
+  const lessonAt = (key: LessonKey) => lessons.get(lessonKeyId(key))
   const streams = cohort.settings.streams
   const academicYear = resolveAcademicYear(settings)
 
@@ -94,32 +100,49 @@ export const OfficialScheduleTable = ({
                       </span>
                     </td>
                   )}
-                  {row.cells.map((slotCell, streamIndex) => (
-                    <Fragment key={streams[streamIndex].id}>
-                      {row.partIndex === 0 && (
-                        <td rowSpan={row.partCount} className={cn(cell, 'w-10 text-center font-semibold')}>
-                          {row.slot}
-                        </td>
-                      )}
-                      {slotCell && (
-                        <>
-                          <td rowSpan={slotCell.rowSpan} className={cell}>
-                            {slotCell.part?.subject ?? ''}
+                  {row.cells.map((slotCell, streamIndex) => {
+                    const stream = streams[streamIndex]
+                    const key: LessonKey = { day: block.day, slot: row.slot, streamId: stream.id }
+                    const lesson = lessonAt(key)
+                    const clickable = isEditable && onCellClick
+                    const open = () => onCellClick?.(key, lesson)
+                    const cellProps = clickable
+                      ? {
+                          onClick: open,
+                          className: cn(cell, 'cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-800'),
+                        }
+                      : { className: cell }
+                    return (
+                      <Fragment key={stream.id}>
+                        {row.partIndex === 0 && (
+                          <td rowSpan={row.partCount} className={cn(cell, 'w-10 text-center font-semibold')}>
+                            {row.slot}
                           </td>
-                          <td rowSpan={slotCell.rowSpan} className={cell}>
-                            {slotCell.part?.lecturers.map((name) => (
-                              <div key={name}>{name}</div>
-                            ))}
-                          </td>
-                          <td rowSpan={slotCell.rowSpan} className={cn(cell, 'w-12 text-center')}>
-                            {slotCell.part?.rooms.map((name) => (
-                              <div key={name}>{name}</div>
-                            ))}
-                          </td>
-                        </>
-                      )}
-                    </Fragment>
-                  ))}
+                        )}
+                        {slotCell && (
+                          <>
+                            <td rowSpan={slotCell.rowSpan} {...cellProps}>
+                              {slotCell.part?.subject ?? (clickable ? <span className="text-slate-300">+</span> : '')}
+                            </td>
+                            <td rowSpan={slotCell.rowSpan} {...cellProps}>
+                              {slotCell.part?.lecturers.map((name) => (
+                                <div key={name}>{name}</div>
+                              ))}
+                            </td>
+                            <td
+                              rowSpan={slotCell.rowSpan}
+                              {...cellProps}
+                              className={cn(cellProps.className, 'w-12 text-center')}
+                            >
+                              {slotCell.part?.rooms.map((name) => (
+                                <div key={name}>{name}</div>
+                              ))}
+                            </td>
+                          </>
+                        )}
+                      </Fragment>
+                    )
+                  })}
                 </tr>
               )),
             )}

@@ -90,7 +90,11 @@ export const SettingsPage = () => {
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-3 font-bold">Դասաժամերի ժամեր</h2>
+          <h2 className="mb-1 font-bold">Դասաժամերի ժամեր</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Դասացուցակում ցուցադրվում է միայն դասաժամի համարը (1-2, 3-4 …)՝ ինչպես պաշտոնական ձևում։ Այս ժամերը
+            օգտագործվում են միայն օրացույցի (.ics) ֆայլերում։
+          </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {SLOT_KEYS.map((slot) => (
               <div key={slot} className="flex items-center gap-2">

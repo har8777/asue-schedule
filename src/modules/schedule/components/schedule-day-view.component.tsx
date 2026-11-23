@@ -2,10 +2,9 @@ import { Pencil, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localStore, STORAGE_KEYS } from '../../common/storage/local-storage'
 import { cn } from '../../common/utils/classnames'
-import { useSettings } from '../../settings/settings.context'
 import { DAY_LABELS, DAY_SHORT_LABELS, type DayKey } from '../schedule.constants'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
-import { getDaySlots, lessonKeyId, pickInitialDay, resolveSlotTime } from '../schedule.utils'
+import { getDaySlots, lessonKeyId, pickInitialDay } from '../schedule.utils'
 import { LessonContent } from './lesson-content.component'
 
 interface ScheduleDayViewProps {
@@ -25,7 +24,6 @@ const chipClass = (isActive: boolean) =>
 
 /** Բջջային տեսք. ընտրված հոսքի մեկ օրվա դասերը քարտերով։ Հոսքը հիշվում է հաջորդ այցի համար։ */
 export const ScheduleDayView = ({ cohort, lessons, isEditable = false, onCellClick }: ScheduleDayViewProps) => {
-  const { settings } = useSettings()
   const { streams, days } = cohort.settings
   const streamStorageKey = `${STORAGE_KEYS.STREAM_PREFIX}${cohort.id}`
 
@@ -90,16 +88,10 @@ export const ScheduleDayView = ({ cohort, lessons, isEditable = false, onCellCli
         {slots.map((slot) => {
           const key: LessonKey = { day, slot, streamId }
           const lesson = lessons.get(lessonKeyId(key))
-          const time = resolveSlotTime(cohort.settings, settings.slotTimes, slot)
           const body = (
             <>
               <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-slate-100 py-2 dark:border-slate-800">
                 <span className="font-mono text-sm font-bold">{slot}</span>
-                {time && (
-                  <span className="text-[10px] text-slate-400">
-                    {time.start}–{time.end}
-                  </span>
-                )}
               </div>
               <div className="min-w-0 flex-1 px-3 py-2.5">
                 {lesson ? (
