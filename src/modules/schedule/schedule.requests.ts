@@ -1,5 +1,6 @@
 import { httpClient } from '../common/http/http-client'
 import type {
+  StudyForm,
   Cohort,
   CohortKind,
   CohortSchedule,
@@ -38,7 +39,10 @@ export const scheduleRequests = {
   ): Promise<Cohort> =>
     (await httpClient.post<Cohort>(`/faculties/${facultyId}/cohorts`, payload)).data,
 
-  updateCohort: async (cohortId: string, payload: { name?: string; settings?: CohortSettings }): Promise<UpdateCohortResult> =>
+  updateCohort: async (
+    cohortId: string,
+    payload: { name?: string; studyForm?: StudyForm; settings?: CohortSettings },
+  ): Promise<UpdateCohortResult> =>
     (await httpClient.patch<UpdateCohortResult>(`/cohorts/${cohortId}`, payload)).data,
 
   deleteCohort: async (cohortId: string): Promise<void> => {

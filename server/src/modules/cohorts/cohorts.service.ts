@@ -88,6 +88,7 @@ export class CohortsService {
       id: createId(),
       facultyId,
       divisionId,
+      studyForm: body.studyForm === 'part_time' ? 'part_time' : 'full_time',
       name,
       kind: body.kind === undefined ? 'program' : requireOneOf(body.kind, COHORT_KINDS, 'Տեսակ'),
       sortOrder: this.cohorts.nextSortOrder(facultyId),
@@ -117,7 +118,8 @@ export class CohortsService {
       body.settings === undefined
         ? cohort.settings
         : { ...this.parseSettings(body.settings), slotTimes: cohort.settings.slotTimes }
-    const updated: Cohort = { ...cohort, name, settings }
+    const studyForm = body.studyForm === undefined ? cohort.studyForm : body.studyForm === 'part_time' ? 'part_time' : 'full_time'
+    const updated: Cohort = { ...cohort, name, studyForm, settings }
 
     return this.db.transaction(() => {
       this.cohorts.update(updated)

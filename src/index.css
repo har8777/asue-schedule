@@ -5,12 +5,17 @@
 
 @theme {
   --font-sans: 'Noto Sans Armenian', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-900: #1e3a8a;
+  /* ՀՊՏՀ-ի դասացուցակների գույնը (պաշտոնական փաստաթղթի աղյուսակի գույնը՝ #7b3e31) */
+  --color-brand-50: #f9f1f0;
+  --color-brand-100: #f0deda;
+  --color-brand-200: #e1bdb6;
+  --color-brand-300: #cd9083;
+  --color-brand-400: #b86250;
+  --color-brand-500: #984d3d;
+  --color-brand-600: #7b3e31;
+  --color-brand-700: #623127;
+  --color-brand-800: #502820;
+  --color-brand-900: #3d1f18;
 }
 
 @layer base {
