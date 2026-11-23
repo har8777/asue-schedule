@@ -60,6 +60,36 @@ export const SettingsPage = () => {
         </Card>
 
         <Card className="p-5">
+          <h2 className="mb-1 font-bold">Պաշտոնական ձևի մակագրություններ</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Ցուցադրվում են դասացուցակի «Պաշտոնական» տեսքում և արտահանվող ֆայլերում։
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Ուսումնական տարի" hint="Օր.՝ 2026-2027։ Դատարկի դեպքում հաշվվում է կիսամյակի սկզբից">
+              <TextInput placeholder="2026-2027" {...register('academicYear', { maxLength: 20 })} />
+            </FormField>
+            <FormField label="Հաստատման ամսաթիվ" hint="Ինչպես թղթային տարբերակում, օր.՝ «28» օգոստոսի 2026թ.">
+              <TextInput {...register('approvalDate', { maxLength: 40 })} />
+            </FormField>
+            <FormField label="Հաստատողի պաշտոնը">
+              <TextInput placeholder="ՊՐՈՌԵԿՏՈՐ" {...register('approverTitle', { maxLength: 60 })} />
+            </FormField>
+            <FormField label="Հաստատողի անուն/ազգանուն">
+              <TextInput {...register('approverName', { maxLength: 80 })} />
+            </FormField>
+            <FormField label="Ուսումնական բաժնի պաշտոնը">
+              <TextInput placeholder="Ուսումնական բաժնի պետ" {...register('academicHeadLabel', { maxLength: 60 })} />
+            </FormField>
+            <FormField label="Ուսումնական բաժնի պետի անունը">
+              <TextInput {...register('academicHeadName', { maxLength: 80 })} />
+            </FormField>
+          </div>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Ֆակուլտետի դեկանի անունը վերցվում է «Ֆակուլտետներ» բաժնից։
+          </p>
+        </Card>
+
+        <Card className="p-5">
           <h2 className="mb-3 font-bold">Դասաժամերի ժամեր</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {SLOT_KEYS.map((slot) => (

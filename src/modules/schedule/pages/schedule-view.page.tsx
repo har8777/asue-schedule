@@ -60,6 +60,8 @@ export const ScheduleViewPage = () => {
         <ScheduleBoard
           cohort={schedule.cohort}
           facultyName={schedule.faculty.name}
+          facultyShortName={schedule.faculty.shortName}
+          deanName={schedule.faculty.dean}
           lessons={lessonMap}
           defaultView="official"
           title={`${schedule.faculty.name} — ${schedule.cohort.name}`}

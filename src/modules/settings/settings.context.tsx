@@ -8,6 +8,12 @@ const DEFAULT_SETTINGS: PublicSettings = {
   semesterLabel: '',
   semesterStartDate: null,
   weeksCount: 16,
+  academicYear: '',
+  approverTitle: 'ՊՐՈՌԵԿՏՈՐ',
+  approverName: '',
+  approvalDate: '',
+  academicHeadLabel: 'Ուսումնական բաժնի պետ',
+  academicHeadName: '',
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 

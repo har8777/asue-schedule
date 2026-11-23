@@ -97,7 +97,7 @@ export const ScheduleExportMenu = ({ schedule }: { schedule: CohortSchedule }) =
             <FileDown className="size-4 text-red-500" /> Ներբեռնել PDF
           </button>
           <button type="button" className={menuItemClass} onClick={exportOfficialExcel}>
-            <FileSpreadsheet className="size-4 text-emerald-600" /> Excel (պաշտոնական ձև)
+            <FileSpreadsheet className="size-4 text-emerald-600" /> Excel (շաբաթներով, ամսաթվերով)
           </button>
           <button
             type="button"
