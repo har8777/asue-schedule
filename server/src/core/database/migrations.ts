@@ -143,12 +143,6 @@ const MIGRATIONS: Migration[] = [
       ALTER TABLE faculties ADD COLUMN dean TEXT NOT NULL DEFAULT '';
     `,
   },
-  {
-    version: 7,
-    name: 'cohort-study-form',
-    // Առկա և հեռակա ուսուցման դասացուցակներն ունեն տարբեր ձևաչափ
-    sql: `ALTER TABLE cohorts ADD COLUMN study_form TEXT NOT NULL DEFAULT 'full_time';`,
-  },
 ]
 
 /**

@@ -80,14 +80,8 @@ export const SettingsPage = () => {
             <FormField label="Ուսումնական բաժնի պաշտոնը">
               <TextInput placeholder="Ուսումնական բաժնի պետ" {...register('academicHeadLabel', { maxLength: 60 })} />
             </FormField>
-            <FormField label="Ուսումնական բաժնի պետի անունը" hint="Առկա ուսուցման դասացուցակի ստորագրության տողում">
+            <FormField label="Ուսումնական բաժնի պետի անունը">
               <TextInput {...register('academicHeadName', { maxLength: 80 })} />
-            </FormField>
-            <FormField label="Հեռակայի բաժնի պաշտոնը">
-              <TextInput placeholder="Ակադեմիական կազմի սպասարկման բաժնի պետ" {...register('partTimeHeadLabel', { maxLength: 80 })} />
-            </FormField>
-            <FormField label="Հեռակայի բաժնի պետի անունը" hint="Հեռակա ուսուցման դասացուցակի ստորագրության տողում">
-              <TextInput {...register('partTimeHeadName', { maxLength: 80 })} />
             </FormField>
           </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">

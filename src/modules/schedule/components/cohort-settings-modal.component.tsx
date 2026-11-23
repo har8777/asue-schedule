@@ -19,12 +19,11 @@ import {
   type SlotKey,
 } from '../schedule.constants'
 import { scheduleRequests } from '../schedule.requests'
-import type { Cohort, CohortSettings, CohortStream, Lesson, StudyForm } from '../schedule.types'
+import type { Cohort, CohortSettings, CohortStream, Lesson } from '../schedule.types'
 import { buildDaySlots, countLessonsOutsideGrid } from '../schedule.utils'
 
 interface CohortSettingsForm {
   name: string
-  studyForm: StudyForm
   streams: CohortStream[]
   days: Record<DayKey, boolean>
   daySlotStart: Record<DayKey, SlotKey>
@@ -42,7 +41,6 @@ interface CohortSettingsModalProps {
 
 const toFormValues = (cohort: Cohort): CohortSettingsForm => ({
   name: cohort.name,
-  studyForm: cohort.studyForm,
   streams: cohort.settings.streams.map((stream) => ({ ...stream })),
   days: Object.fromEntries(DAY_KEYS.map((day) => [day, cohort.settings.days.includes(day)])) as Record<DayKey, boolean>,
   daySlotStart: Object.fromEntries(DAY_KEYS.map((day) => [day, cohort.settings.daySlotStart[day] ?? '1-2'])) as Record<
@@ -96,11 +94,7 @@ export const CohortSettingsModal = ({ isOpen, cohort, lessons, onClose, onSaved,
     }
 
     try {
-      const result = await scheduleRequests.updateCohort(cohort.id, {
-        name: values.name.trim(),
-        studyForm: values.studyForm,
-        settings,
-      })
+      const result = await scheduleRequests.updateCohort(cohort.id, { name: values.name.trim(), settings })
       onSaved(result.cohort)
       toast.success(result.removedLessons ? `Պահպանվեց։ Ջնջվեց ${result.removedLessons} դաս։` : 'Կարգավորումները պահպանվեցին')
       onClose()
@@ -163,12 +157,6 @@ export const CohortSettingsModal = ({ isOpen, cohort, lessons, onClose, onSaved,
       }
     >
       <form id="cohort-settings-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
-        <FormField label="Ուսուցման ձև" hint="Հեռակայի դասացուցակը կազմվում է շաբաթներով և ամսաթվերով">
-          <SelectInput {...register('studyForm')}>
-            <option value="full_time">Առկա</option>
-            <option value="part_time">Հեռակա</option>
-          </SelectInput>
-        </FormField>
         <FormField label="Անվանում" error={formState.errors.name?.message}>
           <TextInput {...register('name', { required: 'Մուտքագրեք անվանումը', maxLength: { value: 80, message: 'Առավելագույնը 80 նիշ' } })} />
         </FormField>

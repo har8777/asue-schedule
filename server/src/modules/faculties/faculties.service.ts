@@ -116,7 +116,6 @@ export class FacultiesService {
           id: createId(),
           facultyId: faculty.id,
           divisionId: null,
-          studyForm: 'full_time',
           name,
           kind: 'year',
           sortOrder: index + 1,

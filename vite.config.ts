@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           scope: './',
           display: 'standalone',
           orientation: 'any',
-          theme_color: '#7b3e31',
+          theme_color: '#1e3a8a',
           background_color: '#f8fafc',
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
