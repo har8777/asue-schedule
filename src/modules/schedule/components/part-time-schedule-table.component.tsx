@@ -5,6 +5,8 @@ import { buildOfficialRows, collectSlots, formatDate } from '../schedule.calenda
 import { resolveAcademicYear } from '../schedule.official'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
 import { lessonKeyId } from '../schedule.utils'
+import { AsueLetterhead } from './asue-letterhead.component'
+import { ScheduleSignatures } from './schedule-signatures.component'
 
 interface PartTimeScheduleTableProps {
   cohort: Cohort
@@ -16,13 +18,18 @@ interface PartTimeScheduleTableProps {
   onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
 }
 
-const cell = 'border border-slate-400 px-1.5 py-1 align-middle dark:border-slate-500'
-const head = 'border border-slate-400 bg-brand-600 px-1.5 py-1 text-center align-middle font-bold text-white'
+const border = 'border border-slate-400 dark:border-slate-500'
+const head = `${border} bg-brand-600 px-1 py-1 text-center align-middle font-bold text-white`
+const cell = `${border} px-1 py-0.5 align-middle leading-tight`
+/** Չօգտագործվող դասաժամի սյունակները ստվերվում են՝ ինչպես թղթային տարբերակում։ */
+const muted = 'bg-slate-200 dark:bg-slate-800'
 
 /**
- * Հեռակա բակալավրիատի դասացուցակ՝ ՀՊՏՀ-ի ձևաչափով։ Տողերում՝ շաբաթների
- * համարները և իրական ամսաթվերը, սյունակներում՝ դասաժամերը՝ «Առարկա / Դասախոս /
- * Լսարան» ենթասյունակներով։ Մեկ աղյուսակ՝ մեկ հոսքի համար։
+ * Հեռակա բակալավրիատի դասացուցակ՝ ՀՊՏՀ-ի թղթային ձևաչափով։
+ *
+ * Ձախից՝ «Շաբաթ» (շաբաթվա համարը, միավորված իր օրերի վրա) և «Օրեր» (իրական
+ * ամսաթվերը), աջից՝ «Ժամեր»՝ յուրաքանչյուր դասաժամ «Առարկա / Դասախոս / Լսարան»
+ * ենթասյունակներով։ Վերնագրից հետո գալիս է սյունակների համարակալման տողը։
  */
 export const PartTimeScheduleTable = ({
   cohort,
@@ -37,43 +44,44 @@ export const PartTimeScheduleTable = ({
   const slots = collectSlots(cohort)
   const rows = buildOfficialRows({ cohort, lessons, streamId, settings, slots })
   const streamName = cohort.settings.streams.find((stream) => stream.id === streamId)?.name ?? ''
-  const academicYear = resolveAcademicYear(settings)
+  const academicYear = resolveAcademicYear(settings).replace('-', '/')
+  const columnCount = 2 + slots.length * 3
+
+  // Ամբողջովին դատարկ դասաժամի սյունակները ստվերվում են
+  const emptySlots = new Set(
+    slots.filter((slot) => rows.every((row) => !row.cells.find((item) => item.slot === slot)?.part)),
+  )
+
+  const subtitle = [
+    `${facultyName}ի`,
+    academicYear && `${academicYear} ուս. տարվա`,
+    settings.semesterLabel,
+    'հեռակա բակալավրիատ',
+    cohort.settings.programName,
+    cohort.name,
+    streamName,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className="flex flex-col gap-3 text-slate-900 dark:text-slate-100">
-      <header className="relative pb-1">
-        <div className="text-center">
-          <h2 className="text-xl font-extrabold tracking-[0.25em]">ԴԱՍԱՑՈՒՑԱԿ</h2>
-          <p className="mt-1 text-xs">
-            {facultyName}ի {academicYear && `${academicYear} ուս. տարվա `}
-            {settings.semesterLabel} հեռակա բակալավրիատ {cohort.name} {streamName}
-          </p>
-        </div>
-        {(settings.approverName || settings.approverTitle) && (
-          <div className="mt-2 text-right text-[11px] leading-relaxed sm:absolute sm:top-0 sm:right-0 sm:mt-0">
-            <p className="font-bold">ՀԱՍՏԱՏՈՒՄ ԵՄ</p>
-            <p className="font-semibold">
-              {settings.approverTitle} {settings.approverName}
-            </p>
-            {settings.approvalDate && <p className="text-slate-500">{settings.approvalDate}</p>}
-          </div>
-        )}
-      </header>
+    <div className="flex flex-col text-slate-900 dark:text-slate-100">
+      <AsueLetterhead subtitle={subtitle} />
 
       {!settings.semesterStartDate && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <p className="print-hidden mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           Ամսաթվերը ցուցադրելու համար «Կարգավորումներ» բաժնում նշեք կիսամյակի սկիզբը։
         </p>
       )}
 
       <div className="print-table-wrapper overflow-x-auto">
-        <table className="w-full border-collapse text-[11px]">
+        <table className="w-full border-collapse text-[10px]">
           <thead>
             <tr>
               <th rowSpan={3} className={cn(head, 'w-8')}>
-                Շաբաթ
+                <span className="inline-block [writing-mode:vertical-rl] [transform:rotate(180deg)]">Շաբաթ</span>
               </th>
-              <th rowSpan={3} className={cn(head, 'w-24')}>
+              <th rowSpan={3} className={cn(head, 'w-20')}>
                 Օրեր
               </th>
               <th colSpan={slots.length * 3} className={head}>
@@ -92,8 +100,18 @@ export const PartTimeScheduleTable = ({
                 <Fragment key={slot}>
                   <th className={head}>Առարկա</th>
                   <th className={head}>Դասախոս</th>
-                  <th className={cn(head, 'w-10')}>Լսարան</th>
+                  <th className={cn(head, 'w-6 px-0')}>
+                    <span className="inline-block [writing-mode:vertical-rl] [transform:rotate(180deg)]">Լսարան</span>
+                  </th>
                 </Fragment>
+              ))}
+            </tr>
+            {/* Սյունակների համարակալումը՝ ինչպես թղթային ձևում */}
+            <tr className="bg-slate-200 dark:bg-slate-800">
+              {Array.from({ length: columnCount }, (_, index) => (
+                <th key={index} className={cn(border, 'px-1 py-0 text-center text-[9px] font-normal')}>
+                  {index + 1}
+                </th>
               ))}
             </tr>
           </thead>
@@ -101,37 +119,29 @@ export const PartTimeScheduleTable = ({
             {rows.map((row) => (
               <tr key={`${row.week}-${row.day}`} className="bg-white dark:bg-slate-950">
                 {row.weekRowSpan > 0 && (
-                  <td
-                    rowSpan={row.weekRowSpan}
-                    className={cn(cell, 'bg-brand-600 text-center font-bold text-white')}
-                  >
+                  <td rowSpan={row.weekRowSpan} className={cn(cell, 'bg-brand-600 text-center font-bold text-white')}>
                     {row.week}
                   </td>
                 )}
-                <td className={cn(cell, 'text-center whitespace-nowrap')}>
+                <td className={cn(cell, muted, 'text-center whitespace-nowrap')}>
                   {row.date ? formatDate(row.date) : ''}
                 </td>
                 {row.cells.map((slotCell) => {
                   const key: LessonKey = { day: row.day, slot: slotCell.slot, streamId }
                   const lesson = lessons.get(lessonKeyId(key))
+                  const isMuted = emptySlots.has(slotCell.slot)
                   const clickable = isEditable && onCellClick
-                  const props = clickable
-                    ? {
-                        onClick: () => onCellClick?.(key, lesson),
-                        className: cn(cell, 'cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-800'),
-                      }
-                    : { className: cell }
+                  const base = cn(cell, isMuted && muted, clickable && 'cursor-pointer hover:bg-brand-50')
+                  const props = clickable ? { onClick: () => onCellClick?.(key, lesson), className: base } : { className: base }
                   return (
                     <Fragment key={slotCell.slot}>
-                      <td {...props}>
-                        {slotCell.part?.subject ?? (clickable ? <span className="text-slate-300">+</span> : '')}
-                      </td>
+                      <td {...props}>{slotCell.part?.subject ?? ''}</td>
                       <td {...props}>
                         {slotCell.part?.lecturers.map((name) => (
                           <div key={name}>{name}</div>
                         ))}
                       </td>
-                      <td {...props} className={cn(props.className, 'text-center')}>
+                      <td {...props} className={cn(base, 'px-0 text-center')}>
                         {slotCell.part?.rooms.map((name) => (
                           <div key={name}>{name}</div>
                         ))}
@@ -145,22 +155,12 @@ export const PartTimeScheduleTable = ({
         </table>
       </div>
 
-      {(settings.partTimeHeadName || deanName) && (
-        <footer className="mt-3 flex flex-col gap-2 text-[11px]">
-          {settings.partTimeHeadName && (
-            <p>
-              <span className="font-semibold">{settings.partTimeHeadLabel}՝</span>
-              <span className="ml-6">{settings.partTimeHeadName}</span>
-            </p>
-          )}
-          {deanName && (
-            <p>
-              <span className="font-semibold">{facultyName}ի դեկան՝</span>
-              <span className="ml-6">{deanName}</span>
-            </p>
-          )}
-        </footer>
-      )}
+      <ScheduleSignatures
+        lines={[
+          { label: settings.partTimeHeadLabel, name: settings.partTimeHeadName },
+          { label: `${facultyName}ի դեկան`, name: deanName ?? '' },
+        ]}
+      />
     </div>
   )
 }

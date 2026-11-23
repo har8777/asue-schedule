@@ -25,6 +25,7 @@ import { buildDaySlots, countLessonsOutsideGrid } from '../schedule.utils'
 interface CohortSettingsForm {
   name: string
   studyForm: StudyForm
+  programName: string
   streams: CohortStream[]
   days: Record<DayKey, boolean>
   daySlotStart: Record<DayKey, SlotKey>
@@ -43,6 +44,7 @@ interface CohortSettingsModalProps {
 const toFormValues = (cohort: Cohort): CohortSettingsForm => ({
   name: cohort.name,
   studyForm: cohort.studyForm,
+  programName: cohort.settings.programName ?? '',
   streams: cohort.settings.streams.map((stream) => ({ ...stream })),
   days: Object.fromEntries(DAY_KEYS.map((day) => [day, cohort.settings.days.includes(day)])) as Record<DayKey, boolean>,
   daySlotStart: Object.fromEntries(DAY_KEYS.map((day) => [day, cohort.settings.daySlotStart[day] ?? '1-2'])) as Record<
@@ -77,6 +79,7 @@ export const CohortSettingsModal = ({ isOpen, cohort, lessons, onClose, onSaved,
       return
     }
     const settings: CohortSettings = {
+      programName: values.programName.trim(),
       streams: values.streams.map((stream) => ({ id: stream.id, name: stream.name.trim() })),
       days: selectedDays,
       daySlotStart: Object.fromEntries(
@@ -168,6 +171,9 @@ export const CohortSettingsModal = ({ isOpen, cohort, lessons, onClose, onSaved,
             <option value="full_time">Առկա</option>
             <option value="part_time">Հեռակա</option>
           </SelectInput>
+        </FormField>
+        <FormField label="Մասնագիտություն" hint="Ցուցադրվում է պաշտոնական վերնագրում, օր.՝ «Կառավարում (ըստ ոլորտի)»">
+          <TextInput {...register('programName', { maxLength: 150 })} />
         </FormField>
         <FormField label="Անվանում" error={formState.errors.name?.message}>
           <TextInput {...register('name', { required: 'Մուտքագրեք անվանումը', maxLength: { value: 80, message: 'Առավելագույնը 80 նիշ' } })} />

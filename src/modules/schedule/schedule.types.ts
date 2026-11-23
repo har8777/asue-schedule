@@ -11,6 +11,8 @@ export interface CohortStream {
 
 export interface CohortSettings {
   streams: CohortStream[]
+  /** Մասնագիտությունը՝ պաշտոնական վերնագրում, օր.՝ «Կառավարում (ըստ ոլորտի)»։ */
+  programName?: string
   days: DayKey[]
   daySlotStart: Partial<Record<DayKey, SlotKey>>
   /** Ուսումնական պլանով հաստատված ժամերը՝ ընդհանուր կարգավորումները փոխարինող։ */
