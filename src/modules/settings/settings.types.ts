@@ -10,5 +10,12 @@ export interface PublicSettings {
   semesterLabel: string
   semesterStartDate: string | null
   weeksCount: number
+  /** Ուսումնական տարին, օր.՝ «2026-2027»։ */
+  academicYear: string
+  approverTitle: string
+  approverName: string
+  approvalDate: string
+  academicHeadLabel: string
+  academicHeadName: string
   slotTimes: Record<SlotKey, SlotTime>
 }

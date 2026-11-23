@@ -13,6 +13,12 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   semesterLabel: '1-ին կիսամյակ',
   semesterStartDate: null,
   weeksCount: 16,
+  academicYear: '',
+  approverTitle: 'ՊՐՈՌԵԿՏՈՐ',
+  approverName: '',
+  approvalDate: '',
+  academicHeadLabel: 'Ուսումնական բաժնի պետ',
+  academicHeadName: '',
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 
@@ -42,10 +48,23 @@ export class SettingsService {
         body.semesterLabel === undefined ? current.semesterLabel : requireString(body.semesterLabel, 'Կիսամյակ', { max: 60 }),
       semesterStartDate: body.semesterStartDate === undefined ? current.semesterStartDate : this.readDate(body.semesterStartDate),
       weeksCount: body.weeksCount === undefined ? current.weeksCount : this.readWeeks(body.weeksCount),
+      academicYear: this.readText(body.academicYear, current.academicYear, 'Ուսումնական տարի', 20),
+      approverTitle: this.readText(body.approverTitle, current.approverTitle, 'Հաստատողի պաշտոնը', 60),
+      approverName: this.readText(body.approverName, current.approverName, 'Հաստատողի անունը', 80),
+      approvalDate: this.readText(body.approvalDate, current.approvalDate, 'Հաստատման ամսաթիվը', 40),
+      academicHeadLabel: this.readText(body.academicHeadLabel, current.academicHeadLabel, 'Ուսումնական բաժնի պաշտոնը', 60),
+      academicHeadName: this.readText(body.academicHeadName, current.academicHeadName, 'Ուսումնական բաժնի պետը', 80),
       slotTimes: body.slotTimes === undefined ? current.slotTimes : this.readSlotTimes(body.slotTimes),
     }
     this.repository.set(PUBLIC_SETTINGS_KEY, next)
     return next
+  }
+
+  /** Ոչ պարտադիր տեքստային դաշտ. դատարկը թույլատրելի է։ */
+  private readText(value: unknown, current: string, label: string, max: number): string {
+    if (value === undefined) return current
+    if (value === null || value === '') return ''
+    return requireString(value, label, { max })
   }
 
   private readDate(value: unknown): string | null {

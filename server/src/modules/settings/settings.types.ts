@@ -7,5 +7,13 @@ export interface PublicSettings {
   /** Կիսամյակի առաջին երկուշաբթին (YYYY-MM-DD)՝ օրացույցի (.ics) արտահանման համար։ */
   semesterStartDate: string | null
   weeksCount: number
+  /** Ուսումնական տարին, օր.՝ «2026-2027»։ Դատարկի դեպքում հաշվվում է կիսամյակի սկզբից։ */
+  academicYear: string
+  /** Պաշտոնական ձևի վերնագրի մակագրությունները և ստորագրությունները։ */
+  approverTitle: string
+  approverName: string
+  approvalDate: string
+  academicHeadLabel: string
+  academicHeadName: string
   slotTimes: Record<SlotKey, SlotTime>
 }

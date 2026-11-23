@@ -1,122 +1,148 @@
 import { Fragment } from 'react'
 import { useSettings } from '../../settings/settings.context'
 import { cn } from '../../common/utils/classnames'
-import { buildOfficialRows, collectSlots, formatDate } from '../schedule.calendar'
 import { DAY_LABELS } from '../schedule.constants'
+import { buildOfficialSheet, resolveAcademicYear } from '../schedule.official'
 import type { Cohort, Lesson } from '../schedule.types'
 
 interface OfficialScheduleTableProps {
   cohort: Cohort
   lessons: Map<string, Lesson>
-  streamId: string
   facultyName: string
-  title?: string
+  /** Ֆակուլտետի կարճ անունը՝ հոսքերի վերնագրերի համար (օր.՝ «Կառավարման»)։ */
+  facultyShortName?: string
+  /** Ֆակուլտետի դեկանի անունը՝ ստորագրության տողի համար։ */
+  deanName?: string
 }
 
-const cellClass = 'border border-slate-300 px-1.5 py-1 align-top dark:border-slate-600'
-const headClass = 'border border-slate-300 px-1.5 py-1 text-center font-bold dark:border-slate-600'
+const cell = 'border border-slate-400 px-1.5 py-1 align-middle dark:border-slate-500'
+const head = 'border border-slate-400 px-1.5 py-1 text-center align-middle font-bold dark:border-slate-500'
 
 /**
- * Պաշտոնական ձև (ՀՊՏՀ). տողերում՝ շաբաթներ և ամսաթվեր, սյունակներում՝ դասաժամերը՝
- * Առարկա / Դասախոս / Լսարան ենթասյունակներով։ Մեկ աղյուսակ՝ մեկ հոսքի համար։
+ * Պաշտոնական դասացուցակ՝ թղթային ձևաչափով. վերնագիր, հաստատման դաշտ, օրերը
+ * ուղղահայաց ձախ սյունակում, հոսքերը՝ «Ժամ / Առարկա / Դասախոսներ / Լսարան»
+ * սյունակներով, և ներքևում՝ ստորագրությունների տողերը։
  */
 export const OfficialScheduleTable = ({
   cohort,
   lessons,
-  streamId,
   facultyName,
-  title,
+  facultyShortName,
+  deanName,
 }: OfficialScheduleTableProps) => {
   const { settings } = useSettings()
-  const slots = collectSlots(cohort)
-  const rows = buildOfficialRows({ cohort, lessons, streamId, settings, slots })
-  const streamName = cohort.settings.streams.find((stream) => stream.id === streamId)?.name ?? streamId
+  const days = buildOfficialSheet(cohort, lessons)
+  const streams = cohort.settings.streams
+  const academicYear = resolveAcademicYear(settings)
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-center">
-        <h2 className="text-base font-extrabold tracking-[0.3em] uppercase">Դասացուցակ</h2>
-        <p className="text-sm font-bold">{facultyName}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {title ?? cohort.name} • {streamName} • {settings.semesterLabel}
-        </p>
-      </div>
-
-      {!settings.semesterStartDate && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-          Ամսաթվերը ցուցադրելու համար «Կարգավորումներ» բաժնում նշեք կիսամյակի սկիզբը։
-        </p>
-      )}
+    <div className="flex flex-col gap-3 text-slate-900 dark:text-slate-100">
+      <header className="relative pb-1">
+        <div className="text-center">
+          <h2 className="text-xl font-extrabold tracking-[0.25em]">ԴԱՍԱՑՈՒՑԱԿ</h2>
+          <p className="mt-1 text-sm">{facultyName}ի առկա բակալավրիատի</p>
+          <p className="text-sm">
+            {academicYear && `${academicYear} ուսումնական `}
+            {settings.semesterLabel}ի
+          </p>
+        </div>
+        {(settings.approverName || settings.approverTitle) && (
+          <div className="mt-2 text-right text-[11px] leading-relaxed sm:absolute sm:top-0 sm:right-0 sm:mt-0">
+            <p className="font-bold">ՀԱՍՏԱՏՈՒՄ ԵՄ</p>
+            <p className="font-semibold">{settings.approverTitle}</p>
+            {settings.approverName && <p>{settings.approverName}</p>}
+            {settings.approvalDate && <p className="text-slate-500">{settings.approvalDate}</p>}
+          </div>
+        )}
+      </header>
 
       <div className="print-table-wrapper overflow-x-auto">
         <table className="w-full border-collapse text-[11px]">
           <thead>
-            <tr className="bg-slate-100 dark:bg-slate-800">
-              <th rowSpan={2} className={headClass}>
-                Շաբաթներ
+            <tr>
+              <th rowSpan={2} className={cn(head, 'bg-red-700 text-white')}>
+                Օր
               </th>
-              <th rowSpan={2} className={headClass}>
-                Օրեր
-              </th>
-              {slots.map((slot) => (
-                <th key={slot} colSpan={3} className={headClass}>
-                  {slot}
-                  <span className="ml-1 font-normal text-slate-500">
-                    {settings.slotTimes[slot]?.start}–{settings.slotTimes[slot]?.end}
-                  </span>
+              {streams.map((stream) => (
+                <th key={stream.id} colSpan={4} className={cn(head, 'bg-red-700 text-white')}>
+                  {[facultyShortName, cohort.name, stream.name].filter(Boolean).join(' ')}
                 </th>
               ))}
             </tr>
-            <tr className="bg-slate-50 dark:bg-slate-900">
-              {slots.map((slot) => (
-                <Fragment key={slot}>
-                  <th className={headClass}>Առարկա</th>
-                  <th className={headClass}>Դասախոս</th>
-                  <th className={headClass}>Լսարան</th>
+            <tr>
+              {streams.map((stream) => (
+                <Fragment key={stream.id}>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Ժամ</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Առարկա</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Դասախոսներ</th>
+                  <th className={cn(head, 'bg-red-700 text-white')}>Լսարան</th>
                 </Fragment>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={`${row.week}-${row.day}`}
-                className={cn(
-                  'bg-white dark:bg-slate-950',
-                  row.weekRowSpan > 0 && 'border-t-2 border-slate-400 dark:border-slate-500',
-                )}
-              >
-                {row.weekRowSpan > 0 && (
-                  <td rowSpan={row.weekRowSpan} className={cn(cellClass, 'text-center font-bold')}>
-                    {row.week}
-                  </td>
-                )}
-                <td className={cn(cellClass, 'whitespace-nowrap')}>
-                  <span className="font-semibold">{row.date ? formatDate(row.date) : DAY_LABELS[row.day]}</span>
-                  {row.date && (
-                    <span className="ml-1 text-slate-400">{DAY_LABELS[row.day].slice(0, 3)}</span>
+            {days.map((block) =>
+              block.rows.map((row, rowIndex) => (
+                <tr key={`${block.day}-${row.slot}-${row.partIndex}`} className="bg-white dark:bg-slate-950">
+                  {rowIndex === 0 && (
+                    <td
+                      rowSpan={block.rows.length}
+                      className={cn(cell, 'w-7 bg-slate-50 p-0 text-center dark:bg-slate-900')}
+                    >
+                      <span className="inline-block text-[10px] font-bold whitespace-nowrap [writing-mode:vertical-rl] [transform:rotate(180deg)]">
+                        {DAY_LABELS[block.day]}
+                      </span>
+                    </td>
                   )}
-                </td>
-                {row.cells.map((cell) => (
-                  <Fragment key={cell.slot}>
-                    <td className={cellClass}>{cell.part?.subject ?? ''}</td>
-                    <td className={cellClass}>
-                      {cell.part?.lecturers.map((name) => (
-                        <div key={name}>{name}</div>
-                      ))}
-                    </td>
-                    <td className={cn(cellClass, 'text-center')}>
-                      {cell.part?.rooms.map((name) => (
-                        <div key={name}>{name}</div>
-                      ))}
-                    </td>
-                  </Fragment>
-                ))}
-              </tr>
-            ))}
+                  {row.cells.map((slotCell, streamIndex) => (
+                    <Fragment key={streams[streamIndex].id}>
+                      {row.partIndex === 0 && (
+                        <td rowSpan={row.partCount} className={cn(cell, 'w-10 text-center font-semibold')}>
+                          {row.slot}
+                        </td>
+                      )}
+                      {slotCell && (
+                        <>
+                          <td rowSpan={slotCell.rowSpan} className={cell}>
+                            {slotCell.part?.subject ?? ''}
+                          </td>
+                          <td rowSpan={slotCell.rowSpan} className={cell}>
+                            {slotCell.part?.lecturers.map((name) => (
+                              <div key={name}>{name}</div>
+                            ))}
+                          </td>
+                          <td rowSpan={slotCell.rowSpan} className={cn(cell, 'w-12 text-center')}>
+                            {slotCell.part?.rooms.map((name) => (
+                              <div key={name}>{name}</div>
+                            ))}
+                          </td>
+                        </>
+                      )}
+                    </Fragment>
+                  ))}
+                </tr>
+              )),
+            )}
           </tbody>
         </table>
       </div>
+
+      {(settings.academicHeadName || deanName) && (
+        <footer className="mt-3 flex flex-col gap-2 text-[11px]">
+          {settings.academicHeadName && (
+            <p>
+              <span className="font-semibold">{settings.academicHeadLabel}՝</span>{' '}
+              <span className="ml-6">{settings.academicHeadName}</span>
+            </p>
+          )}
+          {deanName && (
+            <p>
+              <span className="font-semibold">{facultyName}ի դեկան՝</span>
+              <span className="ml-6">{deanName}</span>
+            </p>
+          )}
+        </footer>
+      )}
     </div>
   )
 }
