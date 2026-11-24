@@ -35,3 +35,6 @@ export const partWeight = (partsCount: number): number => (partsCount > 0 ? 1 / 
 
 /** Կլորացում՝ լողացող կետի սխալները բացառելու համար (0,5-ի ճշտությամբ բավարար է)։ */
 export const roundEntries = (value: number): number => Math.round(value * 1000) / 1000
+
+/** Excel-ից մեկ ներմուծման առավելագույն տողերը։ */
+export const MAX_IMPORT_ROWS = 5000

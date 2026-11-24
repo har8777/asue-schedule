@@ -54,3 +54,45 @@ export interface CohortPlanView {
   updatedAt: string
   usage: SubjectUsage[]
 }
+
+/** Excel-ից ներմուծվող մեկ տող՝ ֆակուլտետ, կուրս, դասընթաց և կիսամյակային ժամաքանակ։ */
+export interface PlanImportRow {
+  facultyName: string
+  cohortName: string
+  subject: string
+  hours: number
+}
+
+/** Ներմուծման ռեժիմ. merge՝ ավելացնում է եղածին, replace՝ փոխարինում է կուրսի ցուցակը։ */
+export const PLAN_IMPORT_MODES = ['merge', 'replace'] as const
+export type PlanImportMode = (typeof PLAN_IMPORT_MODES)[number]
+
+/** Ներմուծման արդյունքը մեկ կուրսի համար։ */
+export interface PlanImportCohortResult {
+  cohortId: string
+  facultyName: string
+  cohortName: string
+  /** Նոր ավելացված դասընթացներ։ */
+  added: number
+  /** Արդեն եղած դասընթացներ, որոնց ժամաքանակը փոխվեց։ */
+  updated: number
+  /** Ֆայլում կրկնված կամ նույն ժամաքանակով տողեր։ */
+  unchanged: number
+  /** replace ռեժիմում՝ հանված դասընթացներ։ */
+  removed: number
+}
+
+/** Տող, որը չի կարողացել ներմուծվել՝ ֆայլի տողի համարով և պատճառով։ */
+export interface PlanImportSkippedRow {
+  /** Տողի համարը ֆայլում (վերնագրի տողը՝ 1)։ */
+  row: number
+  reason: string
+}
+
+export interface PlanImportResult {
+  mode: PlanImportMode
+  cohorts: PlanImportCohortResult[]
+  skipped: PlanImportSkippedRow[]
+  totalAdded: number
+  totalUpdated: number
+}

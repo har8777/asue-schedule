@@ -49,3 +49,39 @@ export const EMPTY_PLAN_VIEW: CohortPlanView = {
   updatedAt: '',
   usage: [],
 }
+
+/** Excel-ից ներմուծվող մեկ տող։ `cohortId`-ն օգտագործվում է, երբ կուրսը արդեն ընտրված է։ */
+export interface PlanImportRow {
+  cohortId?: string
+  facultyName?: string
+  cohortName?: string
+  subject: string
+  hours: number
+  /** ֖այլի տողի համարը՝ սխալները ցույց տալու համար (չի ուղարկվում սերվեր)։ */
+  line?: number
+}
+
+export type PlanImportMode = 'merge' | 'replace'
+
+export interface PlanImportCohortResult {
+  cohortId: string
+  facultyName: string
+  cohortName: string
+  added: number
+  updated: number
+  unchanged: number
+  removed: number
+}
+
+export interface PlanImportSkippedRow {
+  row: number
+  reason: string
+}
+
+export interface PlanImportResult {
+  mode: PlanImportMode
+  cohorts: PlanImportCohortResult[]
+  skipped: PlanImportSkippedRow[]
+  totalAdded: number
+  totalUpdated: number
+}

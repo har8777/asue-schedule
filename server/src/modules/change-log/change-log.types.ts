@@ -6,6 +6,7 @@ export type ChangeLogAction =
   | 'cohort.clear'
   | 'cohort.settings'
   | 'plan.publish'
+  | 'plan.import'
   | 'faculty.clear'
   | 'schedule.clear-all'
   | 'backup.restore'

@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ClipboardList, Undo2 } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ClipboardList, FileSpreadsheet, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/auth.context'
 import { Button } from '../../common/components/button.component'
@@ -13,6 +13,7 @@ import { catalogRequests } from '../../catalog/catalog.requests'
 import { useAsyncData } from '../../common/hooks/use-async-data'
 import { useFaculties } from '../../faculties/hooks/use-faculties'
 import { sortCohorts } from '../../schedule/schedule.utils'
+import { cohortKey, PlanImportModal } from '../components/plan-import-modal.component'
 import { PlanScheduleGrid } from '../components/plan-schedule-grid.component'
 import { PlanSubjectsEditor } from '../components/plan-subjects-editor.component'
 import { curriculumRequests } from '../curriculum.requests'
@@ -36,6 +37,7 @@ export const CurriculumPage = () => {
   const [cohortId, setCohortId] = useState('')
   const [tab, setTab] = useState<PlanTab>('subjects')
   const [isSaving, setIsSaving] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
 
   const facultyId = isSuperAdmin ? selectedFacultyId || faculties.data?.[0]?.id || '' : (user?.facultyId ?? '')
   const faculty = faculties.data?.find((item) => item.id === facultyId)
@@ -50,6 +52,18 @@ export const CurriculumPage = () => {
   useEffect(() => {
     if (cohorts.length > 0 && !cohorts.some((item) => item.id === cohortId)) setCohortId(cohorts[0].id)
   }, [cohorts, cohortId])
+
+  // Ֆայլի կուրսերը նախապես ստուգելու համար՝ բոլոր ֆակուլտետների անուններն ու կուրսերը
+  const knownCohortKeys = useMemo(() => {
+    const keys = new Map<string, string>()
+    for (const item of faculties.data ?? []) {
+      for (const cohortItem of item.cohorts ?? []) {
+        keys.set(cohortKey(item.name, cohortItem.name), cohortItem.id)
+        if (item.shortName) keys.set(cohortKey(item.shortName, cohortItem.name), cohortItem.id)
+      }
+    }
+    return keys
+  }, [faculties.data])
 
   const content: PlanContent | null = isSuperAdmin ? (plan.data?.draft ?? null) : (plan.data?.published ?? null)
   const hasPending = Boolean(plan.data?.hasPendingChanges)
@@ -135,6 +149,15 @@ export const CurriculumPage = () => {
         actions={
           canEdit && (
             <>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<FileSpreadsheet className="size-4" />}
+                onClick={() => setIsImportOpen(true)}
+                disabled={isSaving}
+              >
+                Ներմուծել Excel
+              </Button>
               {hasPending && plan.data?.published && (
                 <Button variant="ghost" size="sm" icon={<Undo2 className="size-4" />} onClick={onDiscard} disabled={isSaving}>
                   Չեղարկել
@@ -236,6 +259,23 @@ export const CurriculumPage = () => {
           <ClipboardList className="size-5" />
           Այս ֆակուլտետում կուրսեր դեռ չկան։
         </Card>
+      )}
+
+      {canEdit && cohort && (
+        <PlanImportModal
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          fallback={{ cohortId: cohort.id, label: `${faculty?.name ?? ''} — ${cohort.name}`.trim() }}
+          templateDefaults={{
+            facultyName: faculty?.name ?? '',
+            cohortNames: cohorts.map((item) => item.name),
+            subjects: catalog.data?.subjects.map((item) => item.name) ?? [],
+          }}
+          knownCohortKeys={knownCohortKeys}
+          onImported={async () => {
+            await plan.reload()
+          }}
+        />
       )}
 
       {isSuperAdmin && plan.data?.publishedAt && (
