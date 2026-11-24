@@ -38,6 +38,8 @@ export interface CohortPlanView {
 
 export interface PublishPlanResult extends CohortPlanView {
   removedLessons: number
+  /** Դասեր, որոնց օրը կոդը չի ճանաչում — պահվել են, ոչ թե ջնջվել։ */
+  keptUnknownLessons: number
 }
 
 export const EMPTY_PLAN_VIEW: CohortPlanView = {

@@ -105,7 +105,10 @@ export const CohortSettingsModal = ({ isOpen, cohort, lessons, onClose, onSaved,
         settings,
       })
       onSaved(result.cohort)
-      toast.success(result.removedLessons ? `Պահպանվեց։ Ջնջվեց ${result.removedLessons} դաս։` : 'Կարգավորումները պահպանվեցին')
+      const kept = result.keptUnknownLessons > 0 ? ` ${result.keptUnknownLessons} այլ ձևաչափի դաս պահպանվեց։` : ''
+      toast.success(
+        result.removedLessons ? `Պահպանվեց։ Ջնջվեց ${result.removedLessons} դաս։${kept}` : `Կարգավորումները պահպանվեցին։${kept}`,
+      )
       onClose()
     } catch (error) {
       toast.error(getErrorMessage(error))
