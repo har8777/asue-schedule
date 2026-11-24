@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useAuth } from '../../auth/auth.context'
 import { Button } from '../../common/components/button.component'
 import { useConfirm } from '../../common/components/confirm.context'
+import { DangerConfirmModal } from '../../common/components/danger-confirm-modal.component'
 import { EmptyState, ErrorState, PageLoader } from '../../common/components/feedback.component'
 import { SegmentedControl, SelectInput, TextInput } from '../../common/components/form-controls.component'
 import { Card, PageHeader } from '../../common/components/page-header.component'
@@ -44,6 +45,7 @@ export const CatalogPage = () => {
   const [type, setType] = useState<CatalogType>('subject')
   const [filter, setFilter] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const catalog = useAsyncData(() => (facultyId ? catalogRequests.getForFaculty(facultyId) : Promise.resolve(EMPTY_CATALOG)), [facultyId])
   const { register, handleSubmit, reset, formState } = useForm<AddItemForm>({ defaultValues: { name: '', floor: '' } })
@@ -116,6 +118,26 @@ export const CatalogPage = () => {
     }
   }
 
+  /**
+   * Ջնջում է ճիշտ այն, ինչ ցուցակում երևում է — զտիչի հետ միասին։ Պլանի տեսքում
+   * ջնջվում են կուրսի դասընթացները (սևագրում), այլապես՝ ֆակուլտետի տեղեկատուի տարրերը։
+   */
+  const onBulkDelete = async () => {
+    try {
+      if (isPlanView && cohort) {
+        plan.setData(await curriculumRequests.updateDraft(cohort.id, { subjects: [] }))
+        toast.success(`Ջնջվեց ${planContent?.subjects.length ?? 0} դասընթաց։ Փոփոխությունը սևագրում է՝ սեղմեք «Հաստատել»։`)
+      } else {
+        const result = await catalogRequests.removeMany(items.map((item) => item.id))
+        catalog.setData(result.catalog)
+        toast.success(`Ջնջվեց ${result.removed} տարր`)
+      }
+      setIsBulkDeleteOpen(false)
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    }
+  }
+
   const onImport = async (file: File) => {
     setIsImporting(true)
     try {
@@ -134,6 +156,12 @@ export const CatalogPage = () => {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
+
+  const facultyName = faculties.data?.find((item) => item.id === facultyId)?.name ?? ''
+  const planSubjectCount = planContent?.subjects.length ?? 0
+  const bulkCount = isPlanView ? planSubjectCount : items.length
+  const isFiltered = !isPlanView && filter.trim().length > 0
+  const canBulkDelete = (isPlanView ? isSuperAdmin : canEditFaculty(facultyId)) && bulkCount > 0
 
   const Icon = TYPE_ICONS[type]
 
@@ -235,6 +263,18 @@ export const CatalogPage = () => {
                   Այս կուրսի ուսումնական պլանը դեռ հաստատված չէ։
                 </p>
               )}
+              {canBulkDelete && (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Trash2 className="size-4" />}
+                    onClick={() => setIsBulkDeleteOpen(true)}
+                  >
+                    Ջնջել բոլոր դասընթացները ({bulkCount})
+                  </Button>
+                </div>
+              )}
               <PlanSubjectsEditor
                 subjects={planContent?.subjects ?? []}
                 usage={plan.data.usage}
@@ -249,7 +289,20 @@ export const CatalogPage = () => {
         </>
       ) : (
         <>
-      <TextInput value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Զտել ցուցակը..." className="mb-3" aria-label="Զտել" />
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <TextInput value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Զտել ցուցակը..." aria-label="Զտել" />
+        {canBulkDelete && (
+          <Button
+            variant="danger"
+            size="sm"
+            className="shrink-0"
+            icon={<Trash2 className="size-4" />}
+            onClick={() => setIsBulkDeleteOpen(true)}
+          >
+            {isFiltered ? `Ջնջել ցուցակը (${bulkCount})` : `Ջնջել բոլորը (${bulkCount})`}
+          </Button>
+        )}
+      </div>
 
       {catalog.isLoading && !catalog.data && <PageLoader />}
       {catalog.error && <ErrorState message={catalog.error} onRetry={catalog.reload} />}
@@ -271,6 +324,29 @@ export const CatalogPage = () => {
       </ul>
         </>
       )}
+
+      <DangerConfirmModal
+        isOpen={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onConfirm={onBulkDelete}
+        title={isPlanView ? 'Ջնջե՞լ բոլոր դասընթացները' : 'Ջնջե՞լ ցուցակը'}
+        confirmText={`Ջնջել ${bulkCount}-ը`}
+        message={
+          isPlanView ? (
+            <>
+              Կջնջվի <b>{bulkCount} դասընթաց</b> «{cohort?.name}» կուրսի ուսումնական պլանից ({facultyName})։ Արդեն լրացված
+              դասերը չեն ջնջվի, բայց առարկաները այլևս ժամաքանակի սահմանափակում չեն ունենա։ Փոփոխությունը մնում է
+              սևագրում՝ մինչև «Հաստատել» սեղմելը։
+            </>
+          ) : (
+            <>
+              Կջնջվի <b>{bulkCount} {CATALOG_TYPE_SINGULAR[type].toLowerCase()}</b> «{facultyName}»-ի տեղեկատուից
+              {isFiltered ? <> (միայն «{filter.trim()}» զտիչին համապատասխանողները)</> : null}։ Արդեն լրացված դասերը չեն
+              փոխվի — ջնջվում է միայն առաջարկների ցուցակը։ Գործողությունը անվերադարձ է։
+            </>
+          )
+        }
+      />
     </>
   )
 }

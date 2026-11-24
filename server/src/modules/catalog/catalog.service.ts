@@ -1,4 +1,5 @@
-import { notFound } from '../../core/http/http-error.ts'
+import type { Database } from '../../core/database/database.ts'
+import { badRequest, notFound } from '../../core/http/http-error.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import { assertFacultyAccess } from '../auth/auth.guards.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
@@ -15,10 +16,12 @@ export const guessFloor = (room: string): string => {
 }
 
 export class CatalogService {
+  private readonly db: Database
   private readonly catalog: CatalogRepository
   private readonly faculties: FacultiesRepository
 
-  constructor(catalog: CatalogRepository, faculties: FacultiesRepository) {
+  constructor(db: Database, catalog: CatalogRepository, faculties: FacultiesRepository) {
+    this.db = db
     this.catalog = catalog
     this.faculties = faculties
   }
@@ -50,6 +53,29 @@ export class CatalogService {
     if (!item) throw notFound('Տարրը չի գտնվել')
     assertFacultyAccess(user, item.facultyId)
     this.catalog.delete(itemId)
+  }
+
+  /**
+   * Խմբային ջնջում։ Ջնջվում են **միայն** բացահայտ նշված id-ները, ոչ թե «ֆակուլտետի
+   * բոլոր տարրերը» — այսպես սերվերը երբեք չի ջնջում ավելին, քան օգտատերը տեսել է ցուցակում։
+   *
+   * Բոլոր տարրերը պետք է նույն ֆակուլտետից լինեն. խառը ցուցակը մերժվում է, որպեսզի
+   * մեկ ֆակուլտետի իրավունքով մյուսինը չջնջվի։ Արդեն բացակայող id-ները լուռ անտեսվում են։
+   */
+  removeMany(user: AuthUser, itemIds: string[]): { removed: number; catalog: FacultyCatalog } {
+    const items = itemIds.map((id) => this.catalog.findById(id)).filter((item): item is CatalogItem => item !== null)
+    if (items.length === 0) throw notFound('Ջնջելու տարրեր չգտնվեցին')
+
+    const facultyIds = new Set(items.map((item) => item.facultyId))
+    if (facultyIds.size > 1) throw badRequest('Բոլոր տարրերը պետք է լինեն նույն ֆակուլտետից')
+
+    const facultyId = items[0].facultyId
+    assertFacultyAccess(user, facultyId)
+
+    return this.db.transaction(() => {
+      items.forEach((item) => this.catalog.delete(item.id))
+      return { removed: items.length, catalog: this.getForFaculty(facultyId) }
+    })
   }
 
   /**
