@@ -1,12 +1,13 @@
 import type { Database } from '../../core/database/database.ts'
 import { badRequest, conflict, notFound } from '../../core/http/http-error.ts'
 import { normalizeName, nowIso } from '../../core/utils/id.ts'
-import { asRecord, requireArray, requireOneOf, requireString } from '../../core/validation/validators.ts'
+import { asRecord, optionalString, requireArray, requireOneOf, requireString } from '../../core/validation/validators.ts'
 import { USER_ROLES } from '../auth/auth.constants.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
 import { ALLOWED_DAY_STARTS } from '../cohorts/cohorts.service.ts'
 import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
+import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { Cohort } from '../cohorts/cohorts.types.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
 import { getCohortDaySlots } from '../lessons/lessons.validation.ts'
@@ -20,6 +21,7 @@ import {
 } from '../schedule-config/schedule-config.constants.ts'
 import {
   entriesForHours,
+  MAX_IMPORT_ROWS,
   MAX_PLAN_SUBJECTS,
   MAX_SUBJECT_HOURS,
   MIN_SUBJECT_HOURS,
@@ -27,7 +29,19 @@ import {
   roundEntries,
 } from './curriculum.constants.ts'
 import { emptyPlanContent, type CurriculumRepository } from './curriculum.repository.ts'
-import type { CohortPlan, CohortPlanView, PlanContent, PlanSubject, SubjectUsage } from './curriculum.types.ts'
+import {
+  PLAN_IMPORT_MODES,
+  type CohortPlan,
+  type CohortPlanView,
+  type PlanContent,
+  type PlanImportCohortResult,
+  type PlanImportMode,
+  type PlanImportResult,
+  type PlanImportRow,
+  type PlanImportSkippedRow,
+  type PlanSubject,
+  type SubjectUsage,
+} from './curriculum.types.ts'
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -51,6 +65,7 @@ export class CurriculumService {
   private readonly db: Database
   private readonly plans: CurriculumRepository
   private readonly cohorts: CohortsRepository
+  private readonly faculties: FacultiesRepository
   private readonly lessons: LessonsRepository
   private readonly changeLog: ChangeLogRepository
 
@@ -58,12 +73,14 @@ export class CurriculumService {
     db: Database,
     plans: CurriculumRepository,
     cohorts: CohortsRepository,
+    faculties: FacultiesRepository,
     lessons: LessonsRepository,
     changeLog: ChangeLogRepository,
   ) {
     this.db = db
     this.plans = plans
     this.cohorts = cohorts
+    this.faculties = faculties
     this.lessons = lessons
     this.changeLog = changeLog
   }
@@ -176,6 +193,172 @@ export class CurriculumService {
    * Հաստատում է սևագիրը։ Միայն դրանից հետո պլանը երևում է ֆակուլտետների
    * ադմինների և ուսանողների մոտ, և կուրսի աղյուսակը ստանում է նոր օրերն ու ժամերը։
    */
+  /**
+   * Ներմուծում է դասընթացները Excel-ից քաղված տողերով։ Տողերը խմբավորվում են ըստ
+   * կուրսի, և գրվում են **միայն սևագրում** — մինչև «Հաստատել» սեղմելը ոչ ֆակուլտետի
+   * ադմինները, ոչ ուսանողները չեն տեսնում։
+   *
+   * Սխալ տողը ամբողջ ներմուծումը չի կանգնեցնում. այն վերադարձվում է `skipped`
+   * ցուցակում՝ ֖այլի տողի համարով, որպեսզի օգտատերը կարողանա ուղղել։
+   */
+  importSubjects(user: AuthUser, input: unknown): PlanImportResult {
+    assertSuperAdmin(user)
+    const body = asRecord(input)
+    const mode: PlanImportMode =
+      body.mode === undefined ? 'merge' : requireOneOf(body.mode, PLAN_IMPORT_MODES, 'Ռեժիմ')
+    const rawRows = requireArray(body.rows, 'Տողեր', { min: 1, max: MAX_IMPORT_ROWS })
+
+    const faculties = this.faculties.findAll()
+    const facultyByName = new Map<string, string>()
+    for (const faculty of faculties) {
+      facultyByName.set(normalizeName(faculty.name), faculty.id)
+      // Կարճ անունով էլ է ընդունվում, որ օգտատերը ստիպված չլինի լրիվ անունը գրել
+      if (faculty.shortName) facultyByName.set(normalizeName(faculty.shortName), faculty.id)
+    }
+    const facultyNameById = new Map(faculties.map((faculty) => [faculty.id, faculty.name]))
+    const cohortByKey = new Map<string, Cohort>()
+    for (const cohort of this.cohorts.findAll()) {
+      cohortByKey.set(`${cohort.facultyId}::${normalizeName(cohort.name)}`, cohort)
+    }
+
+    interface Group {
+      cohort: Cohort
+      rows: PlanImportRow[]
+    }
+    const groups = new Map<string, Group>()
+    const skipped: PlanImportSkippedRow[] = []
+
+    rawRows.forEach((raw, index) => {
+      // Վերնագրի տողը ֖այլում 1-ին է, ուստի տվյալների առաջին տողը՝ 2-րդ
+      const line = index + 2
+      let row: Record<string, unknown>
+      try {
+        row = asRecord(raw, 'Տողը')
+      } catch {
+        skipped.push({ row: line, reason: 'Տողը ընթեռնելի չէ' })
+        return
+      }
+
+      const subject = optionalString(row.subject, 'Դասընթաց', 200) ?? ''
+      if (!subject) {
+        skipped.push({ row: line, reason: 'Դասընթացի անունը դատարկ է' })
+        return
+      }
+
+      const hours = Number(typeof row.hours === 'string' ? row.hours.trim().replace(',', '.') : row.hours)
+      if (!Number.isFinite(hours) || Math.round(hours) < MIN_SUBJECT_HOURS || Math.round(hours) > MAX_SUBJECT_HOURS) {
+        skipped.push({
+          row: line,
+          reason: `«${subject}»՝ ժամաքանակը պետք է լինի ${MIN_SUBJECT_HOURS}–${MAX_SUBJECT_HOURS} միջակայքում`,
+        })
+        return
+      }
+
+      const cohortId = optionalString(row.cohortId, 'Կուրսի ID', 60)
+      const facultyName = optionalString(row.facultyName, 'Ֆակուլտետ', 200) ?? ''
+      const cohortName = optionalString(row.cohortName, 'Կուրս', 80) ?? ''
+
+      let cohort: Cohort | undefined
+      if (cohortId) {
+        cohort = this.cohorts.findById(cohortId) ?? undefined
+      } else {
+        const facultyId = facultyByName.get(normalizeName(facultyName))
+        if (facultyId === undefined) {
+          skipped.push({ row: line, reason: `«${facultyName || '—'}» ֆակուլտետը չի գտնվել` })
+          return
+        }
+        cohort = cohortByKey.get(`${facultyId}::${normalizeName(cohortName)}`)
+        if (cohort === undefined) {
+          skipped.push({
+            row: line,
+            reason: `«${facultyNameById.get(facultyId) ?? facultyName}»-ում «${cohortName || '—'}» կուրսը չի գտնվել`,
+          })
+          return
+        }
+      }
+      if (cohort === undefined) {
+        skipped.push({ row: line, reason: 'Կուրսը չի գտնվել' })
+        return
+      }
+
+      const group = groups.get(cohort.id) ?? { cohort, rows: [] }
+      group.rows.push({
+        facultyName: facultyNameById.get(cohort.facultyId) ?? facultyName,
+        cohortName: cohort.name,
+        subject,
+        hours: Math.round(hours),
+      })
+      groups.set(cohort.id, group)
+    })
+
+    const cohorts = this.db.transaction(() => {
+      const results: PlanImportCohortResult[] = []
+      for (const group of groups.values()) {
+        const plan = this.getOrCreatePlan(group.cohort)
+        const existing = mode === 'replace' ? [] : plan.draft.subjects
+        const previousByKey = new Map(plan.draft.subjects.map((item) => [normalizeName(item.subject), item.hours]))
+
+        // Ֆայլում նույն դասընթացը մի քանի անգամ հանդիպելու դեպքում վերջինը հաղթում է
+        const incoming = new Map<string, PlanSubject>()
+        for (const item of group.rows) {
+          incoming.set(normalizeName(item.subject), { subject: item.subject, hours: item.hours })
+        }
+
+        const subjects = dedupeSubjects([...existing, ...incoming.values()])
+        if (subjects.length > MAX_PLAN_SUBJECTS) {
+          throw badRequest(
+            `«${group.cohort.name}»՝ դասընթացների քանակը չի կարող գերազանցել ${MAX_PLAN_SUBJECTS}-ը (ստացվեց ${subjects.length})`,
+          )
+        }
+
+        let added = 0
+        let updated = 0
+        let unchanged = 0
+        for (const [key, item] of incoming) {
+          const before = previousByKey.get(key)
+          if (before === undefined) added++
+          else if (before !== item.hours) updated++
+          else unchanged++
+        }
+        const removed =
+          mode === 'replace' ? plan.draft.subjects.filter((item) => !incoming.has(normalizeName(item.subject))).length : 0
+
+        this.plans.save({ ...plan, draft: { ...plan.draft, subjects }, updatedAt: nowIso() })
+        this.changeLog.insert({
+          userId: user.id,
+          userName: user.displayName,
+          facultyId: group.cohort.facultyId,
+          cohortId: group.cohort.id,
+          cohortName: group.cohort.name,
+          action: 'plan.import',
+          day: '',
+          slot: '',
+          streamId: '',
+          before: null,
+          after: null,
+        })
+        results.push({
+          cohortId: group.cohort.id,
+          facultyName: group.rows[0].facultyName,
+          cohortName: group.cohort.name,
+          added,
+          updated,
+          unchanged,
+          removed,
+        })
+      }
+      return results
+    })
+
+    return {
+      mode,
+      cohorts,
+      skipped,
+      totalAdded: cohorts.reduce((sum, item) => sum + item.added, 0),
+      totalUpdated: cohorts.reduce((sum, item) => sum + item.updated, 0),
+    }
+  }
+
   publish(user: AuthUser, cohortId: string): CohortPlanView & { removedLessons: number } {
     assertSuperAdmin(user)
     const cohort = this.getCohort(cohortId)

@@ -1,5 +1,12 @@
 import { httpClient } from '../common/http/http-client'
-import type { CohortPlanView, PlanContent, PublishPlanResult } from './curriculum.types'
+import type {
+  CohortPlanView,
+  PlanContent,
+  PlanImportMode,
+  PlanImportResult,
+  PlanImportRow,
+  PublishPlanResult,
+} from './curriculum.types'
 
 export const curriculumRequests = {
   get: async (cohortId: string): Promise<CohortPlanView> =>
@@ -19,4 +26,13 @@ export const curriculumRequests = {
 
   discard: async (cohortId: string): Promise<CohortPlanView> =>
     (await httpClient.post<CohortPlanView>(`/cohorts/${cohortId}/plan/discard`)).data,
+
+  /** Excel-ից ներմուծում՝ տողերը գրվում են սևագրում, մինչև «Հաստատել» չեն երևում։ */
+  import: async (rows: PlanImportRow[], mode: PlanImportMode): Promise<PlanImportResult> =>
+    (
+      await httpClient.post<PlanImportResult>('/curriculum/import', {
+        mode,
+        rows: rows.map(({ line: _line, ...row }) => row),
+      })
+    ).data,
 }

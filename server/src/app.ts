@@ -93,6 +93,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
     db,
     curriculumRepository,
     cohortsRepository,
+    facultiesRepository,
     lessonsRepository,
     changeLogRepository,
   )
