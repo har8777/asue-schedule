@@ -7,7 +7,7 @@ import type { AuthUser } from '../auth/auth.types.ts'
 import type { ChangeLogRepository } from '../change-log/change-log.repository.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
-import { getCohortDaySlots } from '../lessons/lessons.validation.ts'
+import { splitLessonsByGrid } from '../lessons/lessons.validation.ts'
 import {
   DAY_KEYS,
   MAX_STREAMS,
@@ -28,6 +28,8 @@ const STREAM_ID_PATTERN = /^stream-\d{1,2}$/
 export interface UpdateCohortResult {
   cohort: Cohort
   removedLessons: number
+  /** Դասեր, որոնց օրը այս կոդը չի ճանաչում — պահվել են, ոչ թե ջնջվել։ */
+  keptUnknownLessons: number
 }
 
 export class CohortsService {
@@ -123,7 +125,7 @@ export class CohortsService {
 
     return this.db.transaction(() => {
       this.cohorts.update(updated)
-      const removedLessons = this.removeLessonsOutsideGrid(updated)
+      const { removed: removedLessons, keptUnknown } = this.removeLessonsOutsideGrid(updated)
       if (body.settings !== undefined) {
         this.changeLog.insert({
           userId: user.id,
@@ -139,7 +141,7 @@ export class CohortsService {
           after: null,
         })
       }
-      return { cohort: updated, removedLessons }
+      return { cohort: updated, removedLessons, keptUnknownLessons: keptUnknown }
     })
   }
 
@@ -177,17 +179,10 @@ export class CohortsService {
     return { streams, days, daySlotStart, programName }
   }
 
-  private removeLessonsOutsideGrid(cohort: Cohort): number {
-    const streamIds = new Set(cohort.settings.streams.map((stream) => stream.id))
-    const outside = this.lessons
-      .findByCohort(cohort.id)
-      .filter(
-        (lesson) =>
-          !streamIds.has(lesson.streamId) ||
-          !cohort.settings.days.includes(lesson.day) ||
-          !getCohortDaySlots(cohort, lesson.day).includes(lesson.slot),
-      )
+  /** Ջնջում է ցանցից դուրս մնացած դասերը։ Չճանաչված օրով դասերը պահվում են՝ տե՛ս splitLessonsByGrid։ */
+  private removeLessonsOutsideGrid(cohort: Cohort): { removed: number; keptUnknown: number } {
+    const { outside, unknown } = splitLessonsByGrid(cohort, this.lessons.findByCohort(cohort.id))
     outside.forEach((lesson) => this.lessons.deleteById(lesson.id))
-    return outside.length
+    return { removed: outside.length, keptUnknown: unknown.length }
   }
 }

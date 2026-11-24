@@ -108,4 +108,6 @@ export interface SaveLessonResult {
 export interface UpdateCohortResult {
   cohort: Cohort
   removedLessons: number
+  /** Դասեր, որոնց օրը կոդը չի ճանաչում — պահվել են, ոչ թե ջնջվել։ */
+  keptUnknownLessons: number
 }

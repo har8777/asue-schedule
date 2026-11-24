@@ -117,10 +117,12 @@ export const CurriculumPage = () => {
       const result = await curriculumRequests.publish(cohort.id)
       await plan.reload()
       await faculties.reload()
+      // Այլ ձևաչափով գրված դասերը չեն ջնջվում — օգտատերը պետք է իմանա, որ դրանք տեղում են
+      const kept = result.keptUnknownLessons > 0 ? ` ${result.keptUnknownLessons} այլ ձևաչափի դաս պահպանվեց։` : ''
       toast.success(
         result.removedLessons > 0
-          ? `Պլանը հաստատվեց։ Աղյուսակից դուրս մնացած ${result.removedLessons} դաս ջնջվեց։`
-          : 'Պլանը հաստատվեց և այժմ տեսանելի է բոլորին',
+          ? `Պլանը հաստատվեց։ Աղյուսակից դուրս մնացած ${result.removedLessons} դաս ջնջվեց։${kept}`
+          : `Պլանը հաստատվեց և այժմ տեսանելի է բոլորին։${kept}`,
       )
     } catch (error) {
       toast.error(getErrorMessage(error))

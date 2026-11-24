@@ -11,7 +11,7 @@ import {
   type DayKey,
   type SlotKey,
 } from '../schedule-config/schedule-config.constants.ts'
-import type { LessonKey, LessonPart, SaveLessonInput } from './lessons.types.ts'
+import type { Lesson, LessonKey, LessonPart, SaveLessonInput } from './lessons.types.ts'
 
 const uniqueNames = (names: string[]): string[] => {
   const seen = new Set<string>()
@@ -62,4 +62,33 @@ export const parseSaveLessonInput = (cohort: Cohort, body: unknown): SaveLessonI
     ...parseLessonKey(cohort, { day: record.day, slot: record.slot, streamId: record.streamId }),
     parts: parseLessonParts(record.parts),
   }
+}
+
+/**
+ * Բաժանում է կուրսի դասերը երեք խմբի՝ ցանցում տեղավորվող, ցանցից դուրս մնացած
+ * և **չճանաչված**։
+ *
+ * Չճանաչված է այն դասը, որի `day`-ը շաբաթվա օր չէ (օր.՝ «2026-11-24»)։ Այդպիսի
+ * դասը այլ մոդելով է գրված, և այս կոդը իրավունք չունի որոշելու, որ այն ավելորդ է։
+ * Այն երբեք չի ջնջվում — չհասկացած տվյալը ջնջելը անվերադարձ կորուստ է։
+ *
+ * Այս ֆունկցիան միակ տեղն է, որտեղ որոշվում է, թե որ դասն է ջնջելի. և՛ կուրսի
+ * կարգավորումները պահպանելիս, և՛ ուսումնական պլանը հաստատելիս օգտագործվում է սա։
+ */
+export const splitLessonsByGrid = (
+  cohort: Cohort,
+  lessons: Lesson[],
+): { outside: Lesson[]; unknown: Lesson[] } => {
+  const streamIds = new Set(cohort.settings.streams.map((stream) => stream.id))
+  const isKnownDay = (day: string): day is DayKey => (DAY_KEYS as readonly string[]).includes(day)
+
+  const unknown = lessons.filter((lesson) => !isKnownDay(lesson.day))
+  const outside = lessons.filter(
+    (lesson) =>
+      isKnownDay(lesson.day) &&
+      (!streamIds.has(lesson.streamId) ||
+        !cohort.settings.days.includes(lesson.day) ||
+        !getCohortDaySlots(cohort, lesson.day).includes(lesson.slot)),
+  )
+  return { outside, unknown }
 }

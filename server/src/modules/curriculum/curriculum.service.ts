@@ -10,7 +10,7 @@ import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
 import type { FacultiesRepository } from '../faculties/faculties.repository.ts'
 import type { Cohort } from '../cohorts/cohorts.types.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
-import { getCohortDaySlots } from '../lessons/lessons.validation.ts'
+import { splitLessonsByGrid } from '../lessons/lessons.validation.ts'
 import type { Lesson, LessonPart, SaveLessonInput } from '../lessons/lessons.types.ts'
 import {
   DAY_KEYS,
@@ -359,7 +359,7 @@ export class CurriculumService {
     }
   }
 
-  publish(user: AuthUser, cohortId: string): CohortPlanView & { removedLessons: number } {
+  publish(user: AuthUser, cohortId: string): CohortPlanView & { removedLessons: number; keptUnknownLessons: number } {
     assertSuperAdmin(user)
     const cohort = this.getCohort(cohortId)
     const plan = this.getOrCreatePlan(cohort)
@@ -385,7 +385,7 @@ export class CurriculumService {
         },
       }
       this.cohorts.update(updated)
-      const removed = this.removeLessonsOutsideGrid(updated)
+      const { removed, keptUnknown } = this.removeLessonsOutsideGrid(updated)
 
       this.changeLog.insert({
         userId: user.id,
@@ -400,10 +400,10 @@ export class CurriculumService {
         before: null,
         after: null,
       })
-      return removed
+      return { removed, keptUnknown }
     })
 
-    return { ...this.getView(cohortId, user), removedLessons }
+    return { ...this.getView(cohortId, user), removedLessons: removedLessons.removed, keptUnknownLessons: removedLessons.keptUnknown }
   }
 
   /** Չեղարկում է չհաստատված փոփոխությունները՝ վերադառնալով հաստատված տարբերակին։ */
@@ -454,18 +454,11 @@ export class CurriculumService {
     }
   }
 
-  private removeLessonsOutsideGrid(cohort: Cohort): number {
-    const streamIds = new Set(cohort.settings.streams.map((stream) => stream.id))
-    const outside = this.lessons
-      .findByCohort(cohort.id)
-      .filter(
-        (lesson) =>
-          !streamIds.has(lesson.streamId) ||
-          !cohort.settings.days.includes(lesson.day) ||
-          !getCohortDaySlots(cohort, lesson.day).includes(lesson.slot),
-      )
+  /** Ջնջում է ցանցից դուրս մնացած դասերը։ Չճանաչված օրով դասերը պահվում են՝ տե՛ս splitLessonsByGrid։ */
+  private removeLessonsOutsideGrid(cohort: Cohort): { removed: number; keptUnknown: number } {
+    const { outside, unknown } = splitLessonsByGrid(cohort, this.lessons.findByCohort(cohort.id))
     outside.forEach((lesson) => this.lessons.deleteById(lesson.id))
-    return outside.length
+    return { removed: outside.length, keptUnknown: unknown.length }
   }
 
   /**
