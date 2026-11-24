@@ -14,6 +14,10 @@ export const catalogRequests = {
     await httpClient.delete(`/catalog/${itemId}`)
   },
 
+  /** Խմբային ջնջում՝ ջնջվում են միայն բացահայտ նշված id-ները։ */
+  removeMany: async (itemIds: string[]): Promise<{ removed: number; catalog: FacultyCatalog }> =>
+    (await httpClient.post<{ removed: number; catalog: FacultyCatalog }>('/catalog/delete', { itemIds })).data,
+
   import: async (rows: CatalogImportRow[]): Promise<{ added: number; skipped: number }> =>
     (await httpClient.post<{ added: number; skipped: number }>('/catalog/import', { rows })).data,
 }

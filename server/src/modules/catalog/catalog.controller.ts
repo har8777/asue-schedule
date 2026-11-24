@@ -13,6 +13,8 @@ import type { CatalogService } from './catalog.service.ts'
 import { CATALOG_TYPES, type CatalogImportRow } from './catalog.types.ts'
 
 const MAX_IMPORT_ROWS = 5000
+/** Մեկ խմբային ջնջման առավելագույն տարրերը։ */
+const MAX_BULK_DELETE = 2000
 
 export const createCatalogController = (
   catalogService: CatalogService,
@@ -37,6 +39,13 @@ export const createCatalogController = (
     })
     .delete('/catalog/:itemId', guards.authenticate, (ctx) => {
       catalogService.remove(requireUser(ctx), ctx.params.itemId)
+    })
+    // Խմբային ջնջում՝ միայն բացահայտ նշված id-ները (տե՛ս CatalogService.removeMany)
+    .post('/catalog/delete', guards.authenticate, (ctx) => {
+      const itemIds = requireArray(asRecord(ctx.body).itemIds, 'Տարրեր', { min: 1, max: MAX_BULK_DELETE }).map((id) =>
+        requireString(id, 'Տարրի ID', { max: 60 }),
+      )
+      return catalogService.removeMany(requireUser(ctx), itemIds)
     })
     .post('/catalog/import', guards.authenticate, guards.requireRoles(USER_ROLES.SUPER_ADMIN), (ctx) => {
       const rows = requireArray(asRecord(ctx.body).rows, 'Տողեր', { min: 1, max: MAX_IMPORT_ROWS }).map(

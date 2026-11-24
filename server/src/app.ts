@@ -78,7 +78,7 @@ export const createApp = async (config: AppConfig = APP_CONFIG) => {
   const settingsService = new SettingsService(settingsRepository)
   const usersService = new UsersService(usersRepository, facultiesRepository)
   const authService = new AuthService(usersRepository, usersService, jwt)
-  const catalogService = new CatalogService(catalogRepository, facultiesRepository)
+  const catalogService = new CatalogService(db, catalogRepository, facultiesRepository)
   const divisionsService = new DivisionsService(db, divisionsRepository, facultiesRepository, cohortsRepository)
   const facultiesService = new FacultiesService(
     db,
