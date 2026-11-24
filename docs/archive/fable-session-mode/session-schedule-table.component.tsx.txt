@@ -1,0 +1,195 @@
+import { Plus } from 'lucide-react'
+import { Fragment, useState } from 'react'
+import { cn } from '../../common/utils/classnames'
+import { sessionDateDigits } from '../schedule.constants'
+import type { Cohort, Lesson, LessonKey } from '../schedule.types'
+import { getDaySlots, getScheduleDays, groupDaysByWeek, isLessonEmpty, lessonKeyId } from '../schedule.utils'
+import {
+  BODY_CELL,
+  EMPTY_CELL,
+  FILLED_CELL,
+  HEAD_CELL,
+  HOVER_CELL,
+  INDEX_CELL,
+  INNER_CELL,
+  OUTER_CELL,
+  PartRows,
+  StackedValues,
+  VERTICAL_TEXT,
+} from './official-table.parts'
+
+interface SessionScheduleTableProps {
+  cohort: Cohort
+  lessons: Map<string, Lesson>
+  streamId: string
+  isEditable?: boolean
+  onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
+}
+
+/** Սյունակների լայնությունները՝ պաշտոնական ձևի համամասնություններով։ */
+const WEEK_COLUMN_WIDTH = 2.2
+const DAY_COLUMN_WIDTH = 6.3
+const SUBJECT_SHARE = 0.467
+const LECTURER_SHARE = 0.446
+
+/**
+ * Հեռակա (նստաշրջանային) դասացուցակ՝ ՀՊՏՀ-ի պաշտոնական ձևով.
+ * տողը մեկ ամսաթիվ է, իսկ ամեն դասաժամ ունի Առարկա / Դասախոս / Լսարան սյունակները։
+ * Ամեն հոսք ունի իր առանձին աղյուսակը, ինչպես պաշտոնական ֆայլերում։
+ */
+export const SessionScheduleTable = ({
+  cohort,
+  lessons,
+  streamId,
+  isEditable = false,
+  onCellClick,
+}: SessionScheduleTableProps) => {
+  const days = getScheduleDays(cohort.settings)
+  const slots = days.length > 0 ? getDaySlots(cohort.settings, days[0]) : []
+  const weeks = groupDaysByWeek(days)
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
+
+  const groupWidth = (100 - WEEK_COLUMN_WIDTH - DAY_COLUMN_WIDTH) / Math.max(slots.length, 1)
+  const subjectWidth = groupWidth * SUBJECT_SHARE
+  const lecturerWidth = groupWidth * LECTURER_SHARE
+  const roomWidth = groupWidth - subjectWidth - lecturerWidth
+  const columnCount = 2 + slots.length * 3
+
+  if (days.length === 0) return null
+
+  return (
+    <div className="print-table-wrapper">
+      <table className="w-full table-fixed border-collapse text-[9px]">
+        <colgroup>
+          <col style={{ width: `${WEEK_COLUMN_WIDTH}%` }} />
+          <col style={{ width: `${DAY_COLUMN_WIDTH}%` }} />
+          {slots.map((slot) => (
+            <Fragment key={slot}>
+              <col style={{ width: `${subjectWidth}%` }} />
+              <col style={{ width: `${lecturerWidth}%` }} />
+              <col style={{ width: `${roomWidth}%` }} />
+            </Fragment>
+          ))}
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th rowSpan={3} className={cn(HEAD_CELL, 'p-0 text-[7px] leading-none')}>
+              <span className={VERTICAL_TEXT}>Շաբաթներ</span>
+            </th>
+            <th rowSpan={3} className={cn(HEAD_CELL, 'px-1 text-[10px]')}>
+              Օրեր
+            </th>
+            <th colSpan={slots.length * 3} className={cn(HEAD_CELL, 'py-1 text-[10px]')}>
+              Ժամեր
+            </th>
+          </tr>
+          <tr>
+            {slots.map((slot) => (
+              <Fragment key={slot}>
+                <th colSpan={2} className={cn(HEAD_CELL, 'py-1 text-[10px]')}>
+                  {slot}
+                </th>
+                <th rowSpan={2} className={cn(HEAD_CELL, 'p-0 text-[7px] leading-none')}>
+                  <span className={VERTICAL_TEXT}>Լսարան</span>
+                </th>
+              </Fragment>
+            ))}
+          </tr>
+          <tr>
+            {slots.map((slot) => (
+              <Fragment key={slot}>
+                <th className={cn(HEAD_CELL, 'py-1.5 text-[10px]')}>Առարկա</th>
+                <th className={cn(HEAD_CELL, 'py-1.5 text-[10px]')}>Դասախոս</th>
+              </Fragment>
+            ))}
+          </tr>
+          <tr>
+            {Array.from({ length: columnCount }, (_, index) => (
+              <td key={index} className={INDEX_CELL}>
+                {index + 1}
+              </td>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {weeks.map((week) =>
+            week.days.map((day, dayIndex) => (
+              <tr key={day}>
+                {dayIndex === 0 && (
+                  <th scope="rowgroup" rowSpan={week.days.length} className={cn(OUTER_CELL, 'text-[10px]')}>
+                    {week.number}
+                  </th>
+                )}
+                <th scope="row" className={cn(INNER_CELL, 'px-1 text-[8px] tracking-tight whitespace-nowrap')}>
+                  {sessionDateDigits(day)}
+                </th>
+
+                {slots.map((slot) => {
+                  const key: LessonKey = { day, slot, streamId }
+                  const cellId = `${day}|${slot}`
+                  const lesson = lessons.get(lessonKeyId(key))
+                  const parts = lesson && !isLessonEmpty(lesson.parts) ? lesson.parts : null
+                  const cellClass = cn(
+                    'border border-black align-top',
+                    parts ? FILLED_CELL : EMPTY_CELL,
+                    isEditable && 'cursor-pointer',
+                    isEditable && hoveredCell === cellId && 'bg-amber-50',
+                  )
+                  const cellProps = isEditable
+                    ? {
+                        onClick: () => onCellClick?.(key, lesson),
+                        onMouseEnter: () => setHoveredCell(cellId),
+                        onMouseLeave: () => setHoveredCell((current) => (current === cellId ? null : current)),
+                      }
+                    : {}
+
+                  return (
+                    <Fragment key={slot}>
+                      <td {...cellProps} className={cn(cellClass, 'px-1 py-0.5 leading-snug break-words')}>
+                        {parts ? (
+                          <PartRows parts={parts} render={(part) => part.subject} />
+                        ) : isEditable && hoveredCell === cellId ? (
+                          <Plus className="mx-auto size-3 text-slate-500" />
+                        ) : null}
+                      </td>
+                      <td {...cellProps} className={cn(cellClass, 'px-1 py-0.5 leading-snug break-words')}>
+                        {parts && (
+                          <PartRows
+                            parts={parts}
+                            render={(part) =>
+                              part.lecturers.map((lecturer) => (
+                                <span key={lecturer} className="block">
+                                  {lecturer}
+                                </span>
+                              ))
+                            }
+                          />
+                        )}
+                      </td>
+                      <td {...cellProps} className={cn(cellClass, 'px-0.5 py-0.5 text-center leading-snug font-semibold')}>
+                        {parts && (
+                          <PartRows
+                            parts={parts}
+                            render={(part) =>
+                              part.rooms.map((room) => (
+                                <span key={room} className="block">
+                                  {room}
+                                </span>
+                              ))
+                            }
+                          />
+                        )}
+                      </td>
+                    </Fragment>
+                  )
+                })}
+              </tr>
+            )),
+          )}
+        </tbody>
+    </table>
+    </div>
+  )
+}

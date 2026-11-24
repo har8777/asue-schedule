@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import type { Faculty } from '../../faculties/faculties.types'
+import { useSettings } from '../../settings/settings.context'
+import { DEFAULT_DOCUMENT_SETTINGS, type DocumentSignatory } from '../../settings/settings.types'
+
+interface ScheduleDocumentProps {
+  faculty: Faculty
+  cohortName: string
+  /** Հոսքի անունը՝ միայն հեռակա (նստաշրջանային) դասացուցակի համար։ */
+  streamName?: string
+}
+
+/** Ֆակուլտետի անունը սեռական հոլովով՝ «… ֆակուլտետ» → «… ֆակուլտետի»։ */
+const facultyGenitive = (name: string): string => (name.endsWith('ֆակուլտետ') ? `${name}ի` : name)
+
+/** Պատկեր, որը լուռ անհետանում է, եթե ֆայլը դրված չէ public/ թղթապանակում։ */
+const DocumentImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [isBroken, setIsBroken] = useState(false)
+  if (!src || isBroken) return null
+  return <img src={src} alt={alt} className={className} onError={() => setIsBroken(true)} />
+}
+
+const SignatoryLine = ({ title, name }: DocumentSignatory) => (
+  <div className="flex items-end justify-between gap-8">
+    <span>{title ? `${title}՝` : ''}</span>
+    <span className="font-semibold whitespace-nowrap">{name}</span>
+  </div>
+)
+
+/**
+ * Դասացուցակի պաշտոնական գլխամասը՝ պատկերանշան, հաստատման մակագրություն,
+ * «ԴԱՍԱՑՈՒՑԱԿ» վերնագիր և ենթավերնագիր։ Երևում է և՛ էկրանին, և՛ տպելիս։
+ */
+export const ScheduleDocumentHeader = ({ faculty, cohortName, streamName }: ScheduleDocumentProps) => {
+  const { settings } = useSettings()
+  // Հին սերվերի պատասխանում document դաշտը կարող է բացակայել
+  const document = settings.document ?? DEFAULT_DOCUMENT_SETTINGS
+  const year = document.academicYear.match(/\d{4}/)?.[0] ?? String(new Date().getFullYear())
+
+  const subtitle = [
+    `${facultyGenitive(faculty.name)} ${document.academicYear} ուս. տարվա ${settings.semesterLabel}`.replace(/\s+/g, ' ').trim(),
+    cohortName,
+    streamName,
+  ]
+    .filter(Boolean)
+    .join(', ')
+
+  return (
+    <header className="pb-3 text-black">
+      <div className="flex items-start justify-between gap-6">
+        <DocumentImage src={document.logoUrl} alt={settings.universityName} className="h-14 w-auto object-contain" />
+
+        <div className="relative mr-[6%] w-[30%] text-center text-[11px] leading-relaxed">
+          {document.approvalLabel && <p className="font-semibold">{document.approvalLabel}</p>}
+          <div className="flex items-end justify-between gap-6">
+            <span className="font-semibold">{document.approverTitle}</span>
+            <span className="whitespace-nowrap">{document.approverName}</span>
+          </div>
+          <p>«__» «____________» {year}թ.</p>
+
+          {document.showApprovalMarks && (
+            <>
+              <DocumentImage
+                src={document.signatureUrl}
+                alt="Ստորագրություն"
+                className="pointer-events-none absolute top-3 right-[6%] h-10 w-auto object-contain"
+              />
+              <DocumentImage
+                src={document.sealUrl}
+                alt="Կնիք"
+                className="pointer-events-none absolute top-0 right-[30%] h-20 w-auto object-contain opacity-70"
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      <h1 className="mt-2 text-center text-lg font-bold tracking-[0.35em]">ԴԱՍԱՑՈՒՑԱԿ</h1>
+      <p className="mt-1 text-center text-[11px] font-semibold">{subtitle}</p>
+    </header>
+  )
+}
+
+/** Դասացուցակի ներքևի ստորագրությունները՝ համալսարանական և ֆակուլտետի։ */
+export const ScheduleDocumentFooter = ({ faculty }: { faculty: Faculty }) => {
+  const { settings } = useSettings()
+  const lines: DocumentSignatory[] = [
+    ...(settings.document?.signatories ?? []),
+    ...(faculty.signatoryTitle || faculty.signatoryName
+      ? [{ title: faculty.signatoryTitle, name: faculty.signatoryName }]
+      : []),
+  ]
+  if (lines.length === 0) return null
+
+  return (
+    <footer className="mx-auto w-[66%] space-y-3 pt-5 text-[11px] text-black">
+      {lines.map((line, index) => (
+        <SignatoryLine key={index} title={line.title} name={line.name} />
+      ))}
+    </footer>
+  )
+}

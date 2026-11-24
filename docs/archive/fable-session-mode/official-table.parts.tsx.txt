@@ -1,0 +1,52 @@
+import type { ReactNode } from 'react'
+import { cn } from '../../common/utils/classnames'
+import type { LessonPart } from '../schedule.types'
+
+/**
+ * ՀՊՏՀ-ի պաշտոնական դասացուցակի ձևաթղթի ընդհանուր ոճերը՝
+ * օգտագործվում են և՛ առկա, և՛ հեռակա աղյուսակներում։
+ */
+
+/** Վերնագրի վանդակ՝ մուգ կարմիր ֆոնով։ */
+export const HEAD_CELL = 'border border-black bg-[#800000] text-center align-middle font-bold text-white'
+
+/** Առաջին (խմբավորող) սյունակը՝ օր կամ շաբաթ։ */
+export const OUTER_CELL = 'border border-black bg-[#800000] text-center align-middle font-bold text-white'
+
+/** Երկրորդ սյունակը՝ ամսաթիվ կամ դասաժամ։ */
+export const INNER_CELL = 'border border-black bg-[#808080] text-center align-middle font-semibold text-white'
+
+/** Սյունակների համարակալման տողը։ */
+export const INDEX_CELL = 'border border-black bg-[#808080] py-px text-center text-[8px] font-semibold text-white'
+
+export const EMPTY_CELL = 'bg-[#BFBFBF]'
+export const FILLED_CELL = 'bg-white'
+export const BODY_CELL = 'border border-black align-top'
+export const HOVER_CELL = 'bg-amber-50'
+
+export const VERTICAL_TEXT = 'inline-block -rotate-180 whitespace-nowrap [writing-mode:vertical-rl]'
+
+/**
+ * Դասի մասերը (համարիչ/հայտարար) դասավորվում են իրար տակ՝ բաժանված գծով,
+ * երեք սյունակներում էլ նույն հերթականությամբ, ինչպես պաշտոնական ֆայլերում։
+ */
+export const PartRows = ({ parts, render }: { parts: LessonPart[]; render: (part: LessonPart) => ReactNode }) => (
+  <>
+    {parts.map((part, index) => (
+      <div key={index} className={cn(index > 0 && 'mt-0.5 border-t border-slate-400 pt-0.5')}>
+        {render(part)}
+      </div>
+    ))}
+  </>
+)
+
+/** Դասախոսների կամ լսարանների ցուցակը՝ ամեն մեկը առանձին տողով։ */
+export const StackedValues = ({ values }: { values: string[] }) => (
+  <>
+    {values.map((value) => (
+      <span key={value} className="block">
+        {value}
+      </span>
+    ))}
+  </>
+)
