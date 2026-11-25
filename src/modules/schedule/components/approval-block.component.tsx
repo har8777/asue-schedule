@@ -7,7 +7,8 @@ import { useSettings } from '../../settings/settings.context'
  *   ՊՐՈՌԵԿՏՈՐ՝  [ստորագրություն]  Լ. Դանիելյան
  *            «28» օգոստոսի 2026թ.
  *
- * Կնիքը դրվում է աջ կողմում՝ անվան և ամսաթվի վրայով, ինչպես թղթային տարբերակում։
+ * Կնիքը դրվում է աջ կողմում՝ անվան աջ մասի վրայով, ինչպես թղթային տարբերակում.
+ * մեծ է, բայց անունը երևում է նրա օղակների միջից (ֆոնը թափանցիկ է)։
  * Ստորագրությունն ու կնիքը երևում են միայն «Ցուցադրել ստորագրությունները»
  * նշումը միացնելուց հետո։
  */
@@ -20,7 +21,7 @@ export const ApprovalBlock = () => {
   const seal = isStamped ? settings.seal : ''
 
   return (
-    <div className="relative min-w-[250px] text-[10px] leading-relaxed">
+    <div className="relative mr-32 min-w-[250px] text-[10px] leading-relaxed">
       <p className="text-center font-bold">ՀԱՍՏԱՏՈՒՄ ԵՄ</p>
 
       <p className="mt-0.5 flex items-end justify-between gap-2">
@@ -45,7 +46,7 @@ export const ApprovalBlock = () => {
           src={seal}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute right-0 -bottom-3 h-20 w-20 object-contain opacity-90"
+          className="pointer-events-none absolute top-0 -right-24 h-32 w-32 object-contain opacity-90"
         />
       )}
     </div>

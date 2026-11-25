@@ -16,6 +16,12 @@ export const exportElementToPdf = async (elementId: string, fileName: string): P
   const [{ toPng }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')])
   const scrollContainers = Array.from(element.querySelectorAll<HTMLElement>('.print-table-wrapper'))
   const printOnly = Array.from(element.querySelectorAll<HTMLElement>('.print-only'))
+  /**
+   * `.print-hidden`-ը թաքցվում է միայն `@media print` կանոնով, իսկ PDF-ը
+   * նկարվում է էկրանի ոճերով, ուստի այստեղ ձեռքով ենք թաքցնում։ Այսպես
+   * խմբագրիչի «+» նշանները և օժանդակ հուշումները ֆայլ չեն ընկնում։
+   */
+  const printHidden = Array.from(element.querySelectorAll<HTMLElement>('.print-hidden'))
   const table = element.querySelector('table')
   const originalStyle = element.getAttribute('style') ?? ''
   const isDark = document.documentElement.classList.contains('dark')
@@ -28,6 +34,7 @@ export const exportElementToPdf = async (elementId: string, fileName: string): P
     element.style.padding = '16px'
     scrollContainers.forEach((container) => (container.style.overflow = 'visible'))
     printOnly.forEach((node) => (node.style.display = 'block'))
+    printHidden.forEach((node) => (node.style.display = 'none'))
     await new Promise((resolve) => setTimeout(resolve, 100))
 
     const dataUrl = await toPng(element, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true })
@@ -48,6 +55,7 @@ export const exportElementToPdf = async (elementId: string, fileName: string): P
     element.setAttribute('style', originalStyle)
     scrollContainers.forEach((container) => (container.style.overflow = ''))
     printOnly.forEach((node) => (node.style.display = ''))
+    printHidden.forEach((node) => (node.style.display = ''))
     if (isDark) document.documentElement.classList.add('dark')
   }
 }
