@@ -160,6 +160,15 @@ const MIGRATIONS: Migration[] = [
              OR division_id IN (SELECT id FROM faculty_divisions WHERE name LIKE '%Հեռակա%'));
     `,
   },
+  {
+    version: 9,
+    name: 'faculty-dean-signature',
+    sql: `
+      ALTER TABLE faculties ADD COLUMN dean_signature TEXT NOT NULL DEFAULT '';
+      -- Պաշտոնական նմուշից հայտնի միակ դեկանը. արդեն լրացվածին ձեռք չի տալիս
+      UPDATE faculties SET dean = 'Մ. Մովսիսյան' WHERE id = 'management' AND dean = '';
+    `,
+  },
 ]
 
 /**

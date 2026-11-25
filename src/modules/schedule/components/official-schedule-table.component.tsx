@@ -1,5 +1,7 @@
 import { Fragment } from 'react'
 import { useSettings } from '../../settings/settings.context'
+import { ApprovalBlock } from './approval-block.component'
+import { ScheduleSignatures } from './schedule-signatures.component'
 import { cn } from '../../common/utils/classnames'
 import { DAY_LABELS } from '../schedule.constants'
 import { buildOfficialSheet, resolveAcademicYear } from '../schedule.official'
@@ -14,6 +16,8 @@ interface OfficialScheduleTableProps {
   facultyShortName?: string
   /** Ֆակուլտետի դեկանի անունը՝ ստորագրության տողի համար։ */
   deanName?: string
+  /** Ֆակուլտետի դեկանի ստորագրությունը՝ data URL։ */
+  deanSignature?: string
   isEditable?: boolean
   onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
 }
@@ -32,6 +36,7 @@ export const OfficialScheduleTable = ({
   facultyName,
   facultyShortName,
   deanName,
+  deanSignature,
   isEditable,
   onCellClick,
 }: OfficialScheduleTableProps) => {
@@ -52,14 +57,9 @@ export const OfficialScheduleTable = ({
             {settings.semesterLabel}ի
           </p>
         </div>
-        {(settings.approverName || settings.approverTitle) && (
-          <div className="mt-2 text-right text-[11px] leading-relaxed sm:absolute sm:top-0 sm:right-0 sm:mt-0">
-            <p className="font-bold">ՀԱՍՏԱՏՈՒՄ ԵՄ</p>
-            <p className="font-semibold">{settings.approverTitle}</p>
-            {settings.approverName && <p>{settings.approverName}</p>}
-            {settings.approvalDate && <p className="text-slate-500">{settings.approvalDate}</p>}
-          </div>
-        )}
+        <div className="mt-2 flex justify-end sm:absolute sm:top-0 sm:right-0 sm:mt-0">
+          <ApprovalBlock />
+        </div>
       </header>
 
       <div className="print-table-wrapper overflow-x-auto">
@@ -150,22 +150,17 @@ export const OfficialScheduleTable = ({
         </table>
       </div>
 
-      {(settings.academicHeadName || deanName) && (
-        <footer className="mt-3 flex flex-col gap-2 text-[11px]">
-          {settings.academicHeadName && (
-            <p>
-              <span className="font-semibold">{settings.academicHeadLabel}՝</span>{' '}
-              <span className="ml-6">{settings.academicHeadName}</span>
-            </p>
-          )}
-          {deanName && (
-            <p>
-              <span className="font-semibold">{facultyName}ի դեկան՝</span>
-              <span className="ml-6">{deanName}</span>
-            </p>
-          )}
-        </footer>
-      )}
+      <ScheduleSignatures
+        showSignatures={settings.showSignatures}
+        lines={[
+          {
+            label: settings.academicHeadLabel,
+            name: settings.academicHeadName,
+            signature: settings.academicHeadSignature,
+          },
+          { label: `${facultyName}ի դեկան`, name: deanName ?? '', signature: deanSignature },
+        ]}
+      />
     </div>
   )
 }

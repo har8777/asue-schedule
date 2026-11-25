@@ -19,6 +19,8 @@ export interface Faculty {
   building: string
   /** Դեկանի անուն/ազգանուն։ */
   dean: string
+  /** Դեկանի ստորագրությունը՝ data URL։ */
+  deanSignature: string
   sortOrder: number
   /** Սևագիր ֆակուլտետը տեսնում է միայն գլխավոր ադմինը։ */
   isPublished: boolean
@@ -35,6 +37,7 @@ export interface FacultyPayload {
   shortName: string
   building: string
   dean: string
+  deanSignature?: string
 }
 
 export interface DivisionPayload {

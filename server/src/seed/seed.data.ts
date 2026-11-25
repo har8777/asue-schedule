@@ -7,6 +7,8 @@ export interface SeedFaculty {
   name: string
   shortName: string
   adminUsername: string
+  /** Դեկանի անուն/ազգանուն՝ պաշտոնական դասացուցակի ստորագրության տողի համար։ */
+  dean?: string
   programs: string[]
   rooms: Record<string, string[]>
 }
@@ -17,6 +19,8 @@ export const SEED_FACULTIES: SeedFaculty[] = [
     name: 'Կառավարման ֆակուլտետ',
     shortName: 'Կառավարում',
     adminUsername: 'karavarum',
+    // Ըստ պաշտոնական նմուշի (karavarum_dasacucak.pdf)
+    dean: 'Մ. Մովսիսյան',
     programs: ['Սերվիս'],
     rooms: {
       '1-ին հարկ': ['101', '102', '104', '105', '106', '107', '108', '110', '111', '112'],

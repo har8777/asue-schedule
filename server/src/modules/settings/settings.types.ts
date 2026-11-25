@@ -18,5 +18,19 @@ export interface PublicSettings {
   /** Հեռակա ուսուցման դասացուցակի ստորագրության տողը։ */
   partTimeHeadLabel: string
   partTimeHeadName: string
+  /**
+   * Ստորագրությունների և կնիքի պատկերները՝ data URL (png/jpeg/webp, SVG՝ ոչ)։
+   * Դատարկ տողը նշանակում է, որ պատկեր դրված չէ։
+   */
+  logo: string
+  approverSignature: string
+  academicHeadSignature: string
+  partTimeHeadSignature: string
+  seal: string
+  /**
+   * Ցուցադրե՞լ ստորագրություններն ու կնիքը փաստաթղթում։ Նախնականը **ոչ** է,
+   * որպեսզի դեռ չհաստատված դասացուցակը պատահաբար կնիքով դուրս չգա։
+   */
+  showSignatures: boolean
   slotTimes: Record<SlotKey, SlotTime>
 }

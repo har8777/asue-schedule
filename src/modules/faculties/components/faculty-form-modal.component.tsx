@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Button } from '../../common/components/button.component'
+import { ImageUploadField } from '../../common/components/image-upload-field.component'
 import { ComboboxInput } from '../../common/components/combobox-input.component'
 import { FormField, SegmentedControl, SelectInput, TextInput } from '../../common/components/form-controls.component'
 import { Modal } from '../../common/components/modal.component'
@@ -18,6 +19,7 @@ interface FacultyFormValues {
   shortName: string
   building: string
   dean: string
+  deanSignature: string
   parentFacultyId: string
   roomsMode: RoomsMode
 }
@@ -54,6 +56,7 @@ export const FacultyFormModal = ({ isOpen, faculty, faculties, onClose, onSaved 
       shortName: faculty?.shortName ?? '',
       building: faculty?.building ?? '',
       dean: faculty?.dean ?? '',
+      deanSignature: faculty?.deanSignature ?? '',
       parentFacultyId: faculties[0]?.id ?? '',
       roomsMode: 'shared',
     })
@@ -67,6 +70,7 @@ export const FacultyFormModal = ({ isOpen, faculty, faculties, onClose, onSaved 
           shortName: values.shortName.trim(),
           building: values.building.trim(),
           dean: values.dean.trim(),
+          deanSignature: values.deanSignature,
         })
         toast.success('Ֆակուլտետը թարմացվեց')
       } else if (mode === 'division') {
@@ -81,6 +85,7 @@ export const FacultyFormModal = ({ isOpen, faculty, faculties, onClose, onSaved 
           shortName: values.shortName.trim(),
           building: values.building.trim(),
           dean: values.dean.trim(),
+          deanSignature: values.deanSignature,
         })
         toast.success('Ֆակուլտետը ստեղծվեց՝ 5 կուրսերով։ Հրապարակելուց հետո կերևա բոլորին։')
       }
@@ -164,6 +169,18 @@ export const FacultyFormModal = ({ isOpen, faculty, faculties, onClose, onSaved 
                 )}
               />
             </FormField>
+            <Controller
+              control={control}
+              name="deanSignature"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="Դեկանի ստորագրությունը"
+                  hint="Դրվում է դասացուցակի ներքևում՝ դեկանի տողի գծի վրա։ Թափանցիկ ֆոնով PNG, մինչև 300 ԿԲ"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
           </>
         )}
 

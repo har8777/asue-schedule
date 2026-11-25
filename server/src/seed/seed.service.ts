@@ -37,7 +37,7 @@ export const seedDatabase = async (deps: SeedDependencies): Promise<void> => {
   if (faculties.findAll().length === 0) {
     db.transaction(() => {
       for (const seed of SEED_FACULTIES) {
-        facultiesService.create({ name: seed.name, shortName: seed.shortName }, seed.id, true)
+        facultiesService.create({ name: seed.name, shortName: seed.shortName, dean: seed.dean ?? '' }, seed.id, true)
         seed.programs.forEach((name) =>
           cohorts.insert({
             id: createId(),

@@ -14,6 +14,8 @@ interface PartTimeScheduleTableProps {
   streamId: string
   facultyName: string
   deanName?: string
+  /** Ֆակուլտետի դեկանի ստորագրությունը՝ data URL։ */
+  deanSignature?: string
   isEditable?: boolean
   onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
 }
@@ -37,6 +39,7 @@ export const PartTimeScheduleTable = ({
   streamId,
   facultyName,
   deanName,
+  deanSignature,
   isEditable,
   onCellClick,
 }: PartTimeScheduleTableProps) => {
@@ -156,9 +159,14 @@ export const PartTimeScheduleTable = ({
       </div>
 
       <ScheduleSignatures
+        showSignatures={settings.showSignatures}
         lines={[
-          { label: settings.partTimeHeadLabel, name: settings.partTimeHeadName },
-          { label: `${facultyName}ի դեկան`, name: deanName ?? '' },
+          {
+            label: settings.partTimeHeadLabel,
+            name: settings.partTimeHeadName,
+            signature: settings.partTimeHeadSignature,
+          },
+          { label: `${facultyName}ի դեկան`, name: deanName ?? '', signature: deanSignature },
         ]}
       />
     </div>

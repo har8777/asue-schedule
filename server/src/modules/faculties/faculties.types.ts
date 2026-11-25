@@ -9,6 +9,8 @@ export interface Faculty {
   building: string
   /** Դեկանի անուն/ազգանուն։ */
   dean: string
+  /** Դեկանի ստորագրությունը՝ data URL։ Դատարկը նշանակում է՝ դրված չէ։ */
+  deanSignature: string
   sortOrder: number
   /** Սևագիր ֆակուլտետը տեսնում է միայն գլխավոր ադմինը։ */
   isPublished: boolean
@@ -26,4 +28,5 @@ export interface FacultyInput {
   shortName: string
   building: string
   dean: string
+  deanSignature?: string
 }

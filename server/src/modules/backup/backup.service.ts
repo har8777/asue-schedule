@@ -1,5 +1,6 @@
 import type { Database } from '../../core/database/database.ts'
 import { badRequest } from '../../core/http/http-error.ts'
+import { readImageField } from '../settings/settings.images.ts'
 import { createId, nowIso } from '../../core/utils/id.ts'
 import { asRecord, requireArray, requireOneOf, requireString } from '../../core/validation/validators.ts'
 import type { AuthUser } from '../auth/auth.types.ts'
@@ -104,6 +105,8 @@ export class BackupService {
         shortName: typeof item.shortName === 'string' ? item.shortName : '',
         building: typeof item.building === 'string' ? item.building : '',
         dean: typeof item.dean === 'string' ? item.dean : '',
+        // Հին պահուստներում ստորագրության դաշտը չկա
+        deanSignature: readImageField(item.deanSignature, 'Դեկանի ստորագրությունը'),
         sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : 0,
         // Հին պահուստներում դաշտը չկա. այդ տվյալները արդեն հրապարակված էին
         isPublished: item.isPublished !== false,
