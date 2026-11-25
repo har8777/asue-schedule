@@ -4,7 +4,7 @@ import { AsueLetterhead } from './asue-letterhead.component'
 import { ScheduleSignatures } from './schedule-signatures.component'
 import { cn } from '../../common/utils/classnames'
 import { DAY_LABELS } from '../schedule.constants'
-import { buildOfficialSheet, resolveAcademicYear } from '../schedule.official'
+import { buildDocumentSubtitle, buildOfficialSheet } from '../schedule.official'
 import { lessonKeyId } from '../schedule.utils'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
 
@@ -44,19 +44,7 @@ export const OfficialScheduleTable = ({
   const days = buildOfficialSheet(cohort, lessons)
   const lessonAt = (key: LessonKey) => lessons.get(lessonKeyId(key))
   const streams = cohort.settings.streams
-  const academicYear = resolveAcademicYear(settings).replace('-', '/')
-
-  // Վերնագրի տողը՝ ճիշտ ինչպես պաշտոնական նմուշում (նույն կաղապարը, ինչ հեռակայում)
-  const subtitle = [
-    `${facultyName}ի`,
-    academicYear && `${academicYear} ուս. տարվա`,
-    settings.semesterLabel,
-    'առկա բակալավրիատի',
-    cohort.settings.programName,
-    cohort.name,
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const subtitle = buildDocumentSubtitle({ facultyName, settings, cohort })
 
   return (
     <div className="flex flex-col gap-3 text-slate-900 dark:text-slate-100">

@@ -86,3 +86,40 @@ export const resolveAcademicYear = (settings: PublicSettings): string => {
   const year = date.getMonth() >= 7 ? date.getFullYear() : date.getFullYear() - 1
   return `${year}-${year + 1}`
 }
+
+interface DocumentSubtitleOptions {
+  facultyName: string
+  settings: PublicSettings
+  cohort: Cohort
+  /** Հոսքի անունը՝ միայն այն փաստաթղթերում, որոնք մեկ հոսքի համար են։ */
+  streamName?: string
+}
+
+/**
+ * Փաստաթղթի ենթավերնագիրը՝ ճիշտ ինչպես պաշտոնական թղթային նմուշում.
+ *
+ *   «Կառավարման ֆակուլտետի 2026/2027 ուս. տարվա 1-ին կիսամյակ հեռակա
+ *    բակալավրիատի Կառավարում (ըստ ոլորտի) 1-ին կուրս 1-ին հոսք»
+ *
+ * Մեկ տեղում է, որպեսզի էկրանը, PDF-ը և Excel-ը երբեք իրարից չշեղվեն։
+ */
+export const buildDocumentSubtitle = ({
+  facultyName,
+  settings,
+  cohort,
+  streamName,
+}: DocumentSubtitleOptions): string => {
+  const academicYear = resolveAcademicYear(settings).replace('-', '/')
+  const studyForm = cohort.studyForm === 'part_time' ? 'հեռակա' : 'առկա'
+  return [
+    `${facultyName}ի`,
+    academicYear && `${academicYear} ուս. տարվա`,
+    settings.semesterLabel,
+    `${studyForm} բակալավրիատի`,
+    cohort.settings.programName,
+    cohort.name,
+    streamName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}

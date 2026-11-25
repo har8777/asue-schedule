@@ -97,10 +97,18 @@ export const ScheduleBoard = ({
         id={SCHEDULE_EXPORT_ELEMENT_ID}
         className={cn('bg-white dark:bg-slate-950', activeView === 'days' && 'hidden print:block')}
       >
-        <div className="print-only hidden pb-2">
-          <h2 className="text-lg font-bold">{title}</h2>
-          {subtitle && <p className="text-sm">{subtitle}</p>}
-        </div>
+        {/*
+          Ֆակուլտետի ու կուրսի մակագրությունը պետք է միայն շաբաթական տեսքին, որը
+          ձևաթուղթ չունի։ Պաշտոնական տեսքն իր գլխամասն ունի (լոգո, «ՀԱՍՏԱՏՈՒՄ ԵՄ»,
+          «ԴԱՍԱՑՈՒՑԱԿ», ենթավերնագիր), ուստի այստեղ ոչինչ չի ավելացվում՝ արտահանվածը
+          ճիշտ նույնն է, ինչ թղթային նմուշը։
+        */}
+        {activeView !== 'official' && (
+          <div className="print-only hidden pb-2">
+            <h2 className="text-lg font-bold">{title}</h2>
+            {subtitle && <p className="text-sm">{subtitle}</p>}
+          </div>
+        )}
         {activeView === 'official' && isPartTime ? (
           <PartTimeScheduleTable
             cohort={cohort}

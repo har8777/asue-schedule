@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { cn } from '../../common/utils/classnames'
 import { useSettings } from '../../settings/settings.context'
 import { buildOfficialRows, collectSlots, formatDate } from '../schedule.calendar'
-import { resolveAcademicYear } from '../schedule.official'
+import { buildDocumentSubtitle } from '../schedule.official'
 import type { Cohort, Lesson, LessonKey } from '../schedule.types'
 import { lessonKeyId } from '../schedule.utils'
 import { AsueLetterhead } from './asue-letterhead.component'
@@ -47,7 +47,6 @@ export const PartTimeScheduleTable = ({
   const slots = collectSlots(cohort)
   const rows = buildOfficialRows({ cohort, lessons, streamId, settings, slots })
   const streamName = cohort.settings.streams.find((stream) => stream.id === streamId)?.name ?? ''
-  const academicYear = resolveAcademicYear(settings).replace('-', '/')
   const columnCount = 2 + slots.length * 3
 
   // Ամբողջովին դատարկ դասաժամի սյունակները ստվերվում են
@@ -55,17 +54,7 @@ export const PartTimeScheduleTable = ({
     slots.filter((slot) => rows.every((row) => !row.cells.find((item) => item.slot === slot)?.part)),
   )
 
-  const subtitle = [
-    `${facultyName}ի`,
-    academicYear && `${academicYear} ուս. տարվա`,
-    settings.semesterLabel,
-    'հեռակա բակալավրիատի',
-    cohort.settings.programName,
-    cohort.name,
-    streamName,
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const subtitle = buildDocumentSubtitle({ facultyName, settings, cohort, streamName })
 
   return (
     <div className="flex flex-col text-slate-900 dark:text-slate-100">

@@ -3,6 +3,7 @@ import type { PublicSettings } from '../../settings/settings.types'
 import { toFileName } from '../../common/utils/download'
 import { buildOfficialRows, collectSlots, formatDate } from '../schedule.calendar'
 import { DAY_LABELS } from '../schedule.constants'
+import { buildDocumentSubtitle } from '../schedule.official'
 import type { Cohort, Lesson } from '../schedule.types'
 
 interface OfficialExcelOptions {
@@ -10,6 +11,8 @@ interface OfficialExcelOptions {
   lessons: Map<string, Lesson>
   settings: PublicSettings
   facultyName: string
+  /** Ֆակուլտետի դեկանը՝ ստորագրության երկրորդ տողում։ */
+  deanName?: string
 }
 
 /** Excel-ում թերթի անունը չի կարող ունենալ այս նիշերը և լինել 31-ից երկար։ */
@@ -25,6 +28,7 @@ export const downloadOfficialExcel = async ({
   lessons,
   settings,
   facultyName,
+  deanName,
 }: OfficialExcelOptions): Promise<void> => {
   const XLSX = await import('xlsx')
   const slots = collectSlots(cohort)
@@ -34,9 +38,10 @@ export const downloadOfficialExcel = async ({
     const rows = buildOfficialRows({ cohort, lessons, streamId: stream.id, settings, slots })
     const data: (string | number)[][] = []
 
+    // Գլխամասը՝ ինչպես թղթային նմուշում. «ԴԱՍԱՑՈՒՑԱԿ» և նույն ենթավերնագիրը,
+    // ինչ էկրանին ու PDF-ում (ֆակուլտետ/կուրս առանձին տողեր չեն ավելացվում)
     data.push(['ԴԱՍԱՑՈՒՑԱԿ'])
-    data.push([facultyName])
-    data.push([`${cohort.name} • ${stream.name} • ${settings.semesterLabel}`])
+    data.push([buildDocumentSubtitle({ facultyName, settings, cohort, streamName: stream.name })])
     data.push([])
 
     // Վերնագրի երեք տող՝ ինչպես պաշտոնական ձևում
@@ -63,11 +68,15 @@ export const downloadOfficialExcel = async ({
       data.push(line)
     })
 
+    // Ստորագրողները՝ նույնը, ինչ փաստաթղթի ներքևում
+    data.push([])
+    data.push([`${settings.partTimeHeadLabel}՝`, '', settings.partTimeHeadName])
+    data.push([`${facultyName}ի դեկան՝`, '', deanName ?? ''])
+
     const sheet = XLSX.utils.aoa_to_sheet(data)
     const merges: Range[] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: 1 + slots.length * 3 } },
       { s: { r: 1, c: 0 }, e: { r: 1, c: 1 + slots.length * 3 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 1 + slots.length * 3 } },
       { s: { r: headerRowIndex, c: 0 }, e: { r: headerRowIndex + 1, c: 0 } },
       { s: { r: headerRowIndex, c: 1 }, e: { r: headerRowIndex + 1, c: 1 } },
       ...slots.map((_, index) => ({
