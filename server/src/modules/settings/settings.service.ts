@@ -19,7 +19,7 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   approverName: 'Լ. Դանիելյան',
   approvalDate: '',
   academicHeadLabel: 'Ուսումնական բաժնի պետ',
-  academicHeadName: 'Ա. Պետրոսյան',
+  academicHeadName: '',
   partTimeHeadLabel: 'Ակադեմիական կազմի սպասարկման բաժնի պետ',
   partTimeHeadName: 'Ժ. Ստեփանյան',
   logo: '',
