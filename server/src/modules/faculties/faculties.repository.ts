@@ -7,6 +7,7 @@ interface FacultyRow {
   short_name: string
   building: string
   dean: string
+  dean_signature: string
   sort_order: number
   is_published: number
   created_at: string
@@ -18,6 +19,7 @@ const toFaculty = (row: FacultyRow): Faculty => ({
   shortName: row.short_name,
   building: row.building,
   dean: row.dean,
+  deanSignature: row.dean_signature ?? '',
   sortOrder: row.sort_order,
   isPublished: row.is_published === 1,
   createdAt: row.created_at,
@@ -50,12 +52,13 @@ export class FacultiesRepository {
 
   insert(faculty: Faculty): void {
     this.db.run(
-      'INSERT INTO faculties (id, name, short_name, building, dean, sort_order, is_published, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO faculties (id, name, short_name, building, dean, dean_signature, sort_order, is_published, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       faculty.id,
       faculty.name,
       faculty.shortName,
       faculty.building,
       faculty.dean,
+      faculty.deanSignature,
       faculty.sortOrder,
       faculty.isPublished ? 1 : 0,
       faculty.createdAt,
@@ -64,11 +67,12 @@ export class FacultiesRepository {
 
   update(faculty: Faculty): void {
     this.db.run(
-      'UPDATE faculties SET name = ?, short_name = ?, building = ?, dean = ?, sort_order = ?, is_published = ? WHERE id = ?',
+      'UPDATE faculties SET name = ?, short_name = ?, building = ?, dean = ?, dean_signature = ?, sort_order = ?, is_published = ? WHERE id = ?',
       faculty.name,
       faculty.shortName,
       faculty.building,
       faculty.dean,
+      faculty.deanSignature,
       faculty.sortOrder,
       faculty.isPublished ? 1 : 0,
       faculty.id,

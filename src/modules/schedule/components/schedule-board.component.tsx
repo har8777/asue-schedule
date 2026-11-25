@@ -25,6 +25,8 @@ interface ScheduleBoardProps {
   facultyShortName?: string
   /** Ֆակուլտետի դեկանը՝ պաշտոնական ձևի ստորագրության տողում։ */
   deanName?: string
+  /** Ֆակուլտետի դեկանի ստորագրությունը՝ data URL։ */
+  deanSignature?: string
   /** Ո՞ր տեսքով բացվի (խմբագրիչում՝ աղյուսակ, հանրային էջում՝ պաշտոնական)։ */
   defaultView?: ScheduleView
   onCellClick?: (key: LessonKey, lesson: Lesson | undefined) => void
@@ -43,6 +45,7 @@ export const ScheduleBoard = ({
   isEditable,
   facultyShortName,
   deanName,
+  deanSignature,
   defaultView = 'table',
   onCellClick,
 }: ScheduleBoardProps) => {
@@ -105,6 +108,7 @@ export const ScheduleBoard = ({
             streamId={streamId}
             facultyName={facultyName}
             deanName={deanName}
+            deanSignature={deanSignature}
             isEditable={isEditable}
             onCellClick={onCellClick}
           />
@@ -115,6 +119,7 @@ export const ScheduleBoard = ({
             facultyName={facultyName}
             facultyShortName={facultyShortName}
             deanName={deanName}
+            deanSignature={deanSignature}
             isEditable={isEditable}
             onCellClick={onCellClick}
           />

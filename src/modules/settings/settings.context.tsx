@@ -16,6 +16,12 @@ const DEFAULT_SETTINGS: PublicSettings = {
   academicHeadName: '',
   partTimeHeadLabel: 'Ակադեմիական կազմի սպասարկման բաժնի պետ',
   partTimeHeadName: '',
+  logo: '',
+  approverSignature: '',
+  academicHeadSignature: '',
+  partTimeHeadSignature: '',
+  seal: '',
+  showSignatures: false,
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 

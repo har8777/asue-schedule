@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { Button } from '../../common/components/button.component'
 import { FormField, TextInput } from '../../common/components/form-controls.component'
+import { ImageUploadField } from '../../common/components/image-upload-field.component'
 import { Card, PageHeader } from '../../common/components/page-header.component'
 import { useToast } from '../../common/components/toast.context'
 import { useDocumentTitle } from '../../common/hooks/use-document-title'
@@ -20,7 +21,7 @@ export const SettingsPage = () => {
   useDocumentTitle('Կարգավորումներ')
   const toast = useToast()
   const { settings, setSettings } = useSettings()
-  const { register, handleSubmit, reset, formState } = useForm<SettingsForm>()
+  const { register, control, handleSubmit, reset, formState } = useForm<SettingsForm>()
 
   useEffect(() => {
     reset({ ...settings, semesterStartDate: settings.semesterStartDate ?? '' })
@@ -91,8 +92,89 @@ export const SettingsPage = () => {
             </FormField>
           </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Ֆակուլտետի դեկանի անունը վերցվում է «Ֆակուլտետներ» բաժնից։
+            Ֆակուլտետի դեկանի անունը և ստորագրությունը վերցվում են «Ֆակուլտետներ» բաժնից։
           </p>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="mb-1 font-bold">Ստորագրություններ և կնիք</h2>
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            Պատկերները դրվում են փաստաթղթում իրենց տեղերում ինքնաբերաբար՝ ստորագրությունը գծի վրա, կնիքը՝ հաստատման
+            դաշտի կողքին։ Լավագույնը թափանցիկ ֆոնով PNG է, մինչև 300 ԿԲ։
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="logo"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="ՀՊՏՀ-ի լոգոն"
+                  hint="Ձևաթղթի ձախ անկյունում։ Առանց դրա գրվում է «ՀՊՏՀ» տեքստով"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="seal"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="Կնիքը"
+                  hint="Դրվում է «ՀԱՍՏԱՏՈՒՄ ԵՄ» դաշտի աջ կողմում"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="approverSignature"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="Հաստատողի ստորագրությունը"
+                  hint="Պրոռեկտորի ստորագրությունը՝ «ՀԱՍՏԱՏՈՒՄ ԵՄ» դաշտում"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="academicHeadSignature"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="Ուսումնական բաժնի պետի ստորագրությունը"
+                  hint="Առկա ուսուցման դասացուցակի ներքևում"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="partTimeHeadSignature"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="Ակադեմիական կազմի բաժնի պետի ստորագրությունը"
+                  hint="Հեռակա ուսուցման դասացուցակի ներքևում"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </div>
+
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl bg-amber-50 p-3 text-xs dark:bg-amber-950/40">
+            <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-brand-600" {...register('showSignatures')} />
+            <span className="text-amber-900 dark:text-amber-200">
+              <b>Ցուցադրել ստորագրություններն ու կնիքը փաստաթղթում</b>
+              <br />
+              Անջատված վիճակում պատկերները պահվում են, բայց ոչ մի տեղ չեն երևում — որպեսզի դեռ չհաստատված դասացուցակը
+              պատահաբար կնիքով դուրս չգա։ Միացնելուց հետո դրանք կերևան նաև <b>հանրային էջում</b> և ներբեռնվող ֆայլերում։
+            </span>
+          </label>
         </Card>
 
         <Card className="p-5">

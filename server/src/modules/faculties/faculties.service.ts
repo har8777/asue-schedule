@@ -10,6 +10,7 @@ import type { CohortsRepository } from '../cohorts/cohorts.repository.ts'
 import type { LessonsRepository } from '../lessons/lessons.repository.ts'
 import type { DivisionsRepository } from '../divisions/divisions.repository.ts'
 import type { FacultiesRepository } from './faculties.repository.ts'
+import { readImageField } from '../settings/settings.images.ts'
 import type { Faculty, FacultyInput, FacultyWithCohorts } from './faculties.types.ts'
 
 export class FacultiesService {
@@ -106,6 +107,7 @@ export class FacultiesService {
       const faculty: Faculty = {
         id,
         ...data,
+        deanSignature: data.deanSignature ?? '',
         sortOrder: this.faculties.nextSortOrder(),
         isPublished,
         createdAt: nowIso(),
@@ -186,6 +188,7 @@ export class FacultiesService {
       // Ըստ նախնականի յուրաքանչյուր ֆակուլտետ ունի իր մասնաշենքը (լսարանները առանձին են)
       building: optionalString(body.building, 'Մասնաշենք', 100) || name,
       dean: optionalString(body.dean, 'Դեկան', 120) ?? '',
+      deanSignature: readImageField(body.deanSignature, 'Դեկանի ստորագրությունը'),
     }
   }
 }

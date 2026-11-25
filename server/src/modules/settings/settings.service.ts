@@ -1,6 +1,7 @@
 import { badRequest } from '../../core/http/http-error.ts'
 import { asRecord, requireString } from '../../core/validation/validators.ts'
 import { DEFAULT_SLOT_TIMES, SLOT_KEYS, type SlotKey, type SlotTime } from '../schedule-config/schedule-config.constants.ts'
+import { readImageField } from './settings.images.ts'
 import type { SettingsRepository } from './settings.repository.ts'
 import type { PublicSettings } from './settings.types.ts'
 
@@ -15,12 +16,18 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   weeksCount: 16,
   academicYear: '',
   approverTitle: 'ՊՐՈՌԵԿՏՈՐ',
-  approverName: '',
+  approverName: 'Լ. Դանիելյան',
   approvalDate: '',
   academicHeadLabel: 'Ուսումնական բաժնի պետ',
-  academicHeadName: '',
+  academicHeadName: 'Ա. Պետրոսյան',
   partTimeHeadLabel: 'Ակադեմիական կազմի սպասարկման բաժնի պետ',
-  partTimeHeadName: '',
+  partTimeHeadName: 'Ժ. Ստեփանյան',
+  logo: '',
+  approverSignature: '',
+  academicHeadSignature: '',
+  partTimeHeadSignature: '',
+  seal: '',
+  showSignatures: false,
   slotTimes: DEFAULT_SLOT_TIMES,
 }
 
@@ -58,6 +65,21 @@ export class SettingsService {
       academicHeadName: this.readText(body.academicHeadName, current.academicHeadName, 'Ուսումնական բաժնի պետը', 80),
       partTimeHeadLabel: this.readText(body.partTimeHeadLabel, current.partTimeHeadLabel, 'Հեռակայի բաժնի պաշտոնը', 80),
       partTimeHeadName: this.readText(body.partTimeHeadName, current.partTimeHeadName, 'Հեռակայի բաժնի պետը', 80),
+      logo: this.readImage(body.logo, current.logo, 'Լոգոն'),
+      approverSignature: this.readImage(body.approverSignature, current.approverSignature, 'Հաստատողի ստորագրությունը'),
+      academicHeadSignature: this.readImage(
+        body.academicHeadSignature,
+        current.academicHeadSignature,
+        'Ուսումնական բաժնի պետի ստորագրությունը',
+      ),
+      partTimeHeadSignature: this.readImage(
+        body.partTimeHeadSignature,
+        current.partTimeHeadSignature,
+        'Ակադեմիական կազմի բաժնի պետի ստորագրությունը',
+      ),
+      seal: this.readImage(body.seal, current.seal, 'Կնիքը'),
+      showSignatures:
+        body.showSignatures === undefined ? current.showSignatures : this.readFlag(body.showSignatures, 'Ստորագրությունների ցուցադրումը'),
       slotTimes: body.slotTimes === undefined ? current.slotTimes : this.readSlotTimes(body.slotTimes),
     }
     this.repository.set(PUBLIC_SETTINGS_KEY, next)
@@ -69,6 +91,17 @@ export class SettingsService {
     if (value === undefined) return current
     if (value === null || value === '') return ''
     return requireString(value, label, { max })
+  }
+
+  /** Պատկերի դաշտ. undefined՝ չփոխել, դատարկ՝ հանել։ Ստուգումը՝ readImageField-ում։ */
+  private readImage(value: unknown, current: string, label: string): string {
+    if (value === undefined) return current
+    return readImageField(value, label)
+  }
+
+  private readFlag(value: unknown, label: string): boolean {
+    if (typeof value !== 'boolean') throw badRequest(`${label} պետք է լինի այո/ոչ`)
+    return value
   }
 
   private readDate(value: unknown): string | null {

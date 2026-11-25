@@ -62,6 +62,7 @@ export const ScheduleViewPage = () => {
           facultyName={schedule.faculty.name}
           facultyShortName={schedule.faculty.shortName}
           deanName={schedule.faculty.dean}
+          deanSignature={schedule.faculty.deanSignature}
           lessons={lessonMap}
           defaultView="official"
           title={`${schedule.faculty.name} — ${schedule.cohort.name}`}
