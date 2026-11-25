@@ -23,7 +23,7 @@ export const ScheduleSignatures = ({ lines, showSignatures = false }: ScheduleSi
   if (visible.length === 0) return null
 
   return (
-    <footer className="mt-4 flex flex-col gap-4 px-4 text-[11px]">
+    <footer className="mt-6 flex flex-col gap-7 px-4 text-[11px]">
       {visible.map((line) => (
         <p key={line.label} className="flex items-end gap-3">
           <span className="font-semibold whitespace-nowrap">{line.label}՝</span>

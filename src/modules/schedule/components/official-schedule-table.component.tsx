@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { useSettings } from '../../settings/settings.context'
-import { ApprovalBlock } from './approval-block.component'
+import { AsueLetterhead } from './asue-letterhead.component'
 import { ScheduleSignatures } from './schedule-signatures.component'
 import { cn } from '../../common/utils/classnames'
 import { DAY_LABELS } from '../schedule.constants'
@@ -44,23 +44,23 @@ export const OfficialScheduleTable = ({
   const days = buildOfficialSheet(cohort, lessons)
   const lessonAt = (key: LessonKey) => lessons.get(lessonKeyId(key))
   const streams = cohort.settings.streams
-  const academicYear = resolveAcademicYear(settings)
+  const academicYear = resolveAcademicYear(settings).replace('-', '/')
+
+  // Վերնագրի տողը՝ ճիշտ ինչպես պաշտոնական նմուշում (նույն կաղապարը, ինչ հեռակայում)
+  const subtitle = [
+    `${facultyName}ի`,
+    academicYear && `${academicYear} ուս. տարվա`,
+    settings.semesterLabel,
+    'առկա բակալավրիատի',
+    cohort.settings.programName,
+    cohort.name,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className="flex flex-col gap-3 text-slate-900 dark:text-slate-100">
-      <header className="relative pb-1">
-        <div className="text-center">
-          <h2 className="text-xl font-extrabold tracking-[0.25em]">ԴԱՍԱՑՈՒՑԱԿ</h2>
-          <p className="mt-1 text-sm">{facultyName}ի առկա բակալավրիատի</p>
-          <p className="text-sm">
-            {academicYear && `${academicYear} ուսումնական `}
-            {settings.semesterLabel}ի
-          </p>
-        </div>
-        <div className="mt-2 flex justify-end sm:absolute sm:top-0 sm:right-0 sm:mt-0">
-          <ApprovalBlock />
-        </div>
-      </header>
+      <AsueLetterhead subtitle={subtitle} />
 
       <div className="print-table-wrapper overflow-x-auto">
         <table className="w-full border-collapse text-[11px]">
