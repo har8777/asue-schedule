@@ -94,7 +94,8 @@ export const SettingsPage = () => {
           <h2 className="mb-1 font-bold">Ստորագրություններ և կնիք</h2>
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
             Պատկերները դրվում են փաստաթղթում իրենց տեղերում ինքնաբերաբար՝ ստորագրությունը գծի վրա, կնիքը՝ հաստատման
-            դաշտի կողքին։ Լավագույնը թափանցիկ ֆոնով PNG է, մինչև 300 ԿԲ։
+            դաշտի կողքին։ Սկանի <strong>սպիտակ ֆոնը հանվում է ինքնաբերաբար</strong>, որ կնիքի տակի գրվածքը երևա։
+            PNG, JPEG կամ WEBP, մինչև 300 ԿԲ։
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
