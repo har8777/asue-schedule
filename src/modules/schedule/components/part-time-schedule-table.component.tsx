@@ -59,7 +59,7 @@ export const PartTimeScheduleTable = ({
     `${facultyName}ի`,
     academicYear && `${academicYear} ուս. տարվա`,
     settings.semesterLabel,
-    'հեռակա բակալավրիատ',
+    'հեռակա բակալավրիատի',
     cohort.settings.programName,
     cohort.name,
     streamName,

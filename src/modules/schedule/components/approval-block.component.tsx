@@ -38,14 +38,14 @@ export const ApprovalBlock = () => {
         <span className="whitespace-nowrap">{settings.approverName}</span>
       </p>
 
-      <p className="mt-1 text-center">{settings.approvalDate || '«___» ____________ 20___թ.'}</p>
+      <p className="mt-1 text-center">{settings.approvalDate || '«___» «_______» 20___թ.'}</p>
 
       {seal && (
         <img
           src={seal}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-6 -bottom-3 h-20 w-20 object-contain opacity-90"
+          className="pointer-events-none absolute right-0 -bottom-3 h-20 w-20 object-contain opacity-90"
         />
       )}
     </div>
