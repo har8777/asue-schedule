@@ -8,6 +8,15 @@ const ACCEPTED = 'image/png,image/jpeg,image/webp'
 const MAX_WIDTH = 600
 const MAX_DATA_URL_LENGTH = 420_000
 
+/**
+ * Սպիտակ ֆոնի հանման շեմերը։ Սկանավորված կնիքն ու ստորագրությունը գրեթե միշտ
+ * սպիտակ թղթի վրա են, և այդ ֆոնը ծածկում է փաստաթղթի տակի գրվածքը։
+ * `OPAQUE`-ից բաց պիքսելները դառնում են լրիվ թափանցիկ, `SOFT`–`OPAQUE`
+ * միջակայքը՝ մասամբ, որ եզրերը ատամնավոր չստացվեն։
+ */
+const WHITE_OPAQUE = 246
+const WHITE_SOFT = 222
+
 interface ImageUploadFieldProps {
   label: string
   hint?: string
@@ -119,6 +128,7 @@ const toDataUrl = (file: File): Promise<string> =>
           return
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        removeWhiteBackground(context, canvas.width, canvas.height)
         const dataUrl = canvas.toDataURL('image/png')
         if (dataUrl.length > MAX_DATA_URL_LENGTH) {
           reject(new Error('Պատկերը չափազանց մեծ է։ Օգտագործեք ավելի փոքր ֆայլ'))
@@ -130,3 +140,24 @@ const toDataUrl = (file: File): Promise<string> =>
     }
     reader.readAsDataURL(file)
   })
+
+/**
+ * Սպիտակ ֆոնը դարձնում է թափանցիկ, որ կնիքի կամ ստորագրության տակի գրվածքը
+ * երևա։ Նայում ենք պիքսելի ամենամուգ ալիքին. մոխրա-սպիտակ ֆոնի մոտ բոլոր
+ * ալիքները բարձր են, իսկ կապույտ թանաքի մոտ գոնե մեկը ցածր է, ուստի գույնը
+ * չի տուժում։
+ */
+const removeWhiteBackground = (context: CanvasRenderingContext2D, width: number, height: number) => {
+  const image = context.getImageData(0, 0, width, height)
+  const pixels = image.data
+  for (let index = 0; index < pixels.length; index += 4) {
+    const darkest = Math.min(pixels[index], pixels[index + 1], pixels[index + 2])
+    if (darkest >= WHITE_OPAQUE) {
+      pixels[index + 3] = 0
+    } else if (darkest > WHITE_SOFT) {
+      const ratio = (darkest - WHITE_SOFT) / (WHITE_OPAQUE - WHITE_SOFT)
+      pixels[index + 3] = Math.round(pixels[index + 3] * (1 - ratio))
+    }
+  }
+  context.putImageData(image, 0, 0)
+}
