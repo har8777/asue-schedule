@@ -53,6 +53,7 @@ export const ScheduleExportMenu = ({ schedule }: { schedule: CohortSchedule }) =
         lessons: new Map(lessons.map((item) => [`${item.day}|${item.slot}|${item.streamId}`, item])),
         settings,
         facultyName: faculty.name,
+        deanName: faculty.dean,
       })
     } catch {
       toast.error('Excel ֆայլը ստեղծել չհաջողվեց')
