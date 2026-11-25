@@ -78,16 +78,10 @@ export const SettingsPage = () => {
             <FormField label="Հաստատողի անուն/ազգանուն">
               <TextInput {...register('approverName', { maxLength: 80 })} />
             </FormField>
-            <FormField label="Ուսումնական բաժնի պաշտոնը">
-              <TextInput placeholder="Ուսումնական բաժնի պետ" {...register('academicHeadLabel', { maxLength: 60 })} />
-            </FormField>
-            <FormField label="Ուսումնական բաժնի պետի անունը" hint="Առկա ուսուցման դասացուցակի ստորագրության տողում">
-              <TextInput {...register('academicHeadName', { maxLength: 80 })} />
-            </FormField>
-            <FormField label="Հեռակայի բաժնի պաշտոնը">
+            <FormField label="Ստորագրողի պաշտոնը">
               <TextInput placeholder="Ակադեմիական կազմի սպասարկման բաժնի պետ" {...register('partTimeHeadLabel', { maxLength: 80 })} />
             </FormField>
-            <FormField label="Հեռակայի բաժնի պետի անունը" hint="Հեռակա ուսուցման դասացուցակի ստորագրության տողում">
+            <FormField label="Ստորագրողի անուն/ազգանուն" hint="Բոլոր դասացուցակների ստորագրության առաջին տողում">
               <TextInput {...register('partTimeHeadName', { maxLength: 80 })} />
             </FormField>
           </div>
@@ -142,23 +136,11 @@ export const SettingsPage = () => {
             />
             <Controller
               control={control}
-              name="academicHeadSignature"
-              render={({ field }) => (
-                <ImageUploadField
-                  label="Ուսումնական բաժնի պետի ստորագրությունը"
-                  hint="Առկա ուսուցման դասացուցակի ներքևում"
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            <Controller
-              control={control}
               name="partTimeHeadSignature"
               render={({ field }) => (
                 <ImageUploadField
-                  label="Ակադեմիական կազմի բաժնի պետի ստորագրությունը"
-                  hint="Հեռակա ուսուցման դասացուցակի ներքևում"
+                  label="Ստորագրողի ստորագրությունը"
+                  hint="Բոլոր դասացուցակների ներքևում՝ առաջին տողում"
                   value={field.value ?? ''}
                   onChange={field.onChange}
                 />

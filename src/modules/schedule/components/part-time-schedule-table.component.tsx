@@ -162,11 +162,6 @@ export const PartTimeScheduleTable = ({
         showSignatures={settings.showSignatures}
         lines={[
           {
-            label: settings.academicHeadLabel,
-            name: settings.academicHeadName,
-            signature: settings.academicHeadSignature,
-          },
-          {
             label: settings.partTimeHeadLabel,
             name: settings.partTimeHeadName,
             signature: settings.partTimeHeadSignature,

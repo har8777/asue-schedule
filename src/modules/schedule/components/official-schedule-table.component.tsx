@@ -154,9 +154,9 @@ export const OfficialScheduleTable = ({
         showSignatures={settings.showSignatures}
         lines={[
           {
-            label: settings.academicHeadLabel,
-            name: settings.academicHeadName,
-            signature: settings.academicHeadSignature,
+            label: settings.partTimeHeadLabel,
+            name: settings.partTimeHeadName,
+            signature: settings.partTimeHeadSignature,
           },
           { label: `${facultyName}ի դեկան`, name: deanName ?? '', signature: deanSignature },
         ]}

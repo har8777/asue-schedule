@@ -13,9 +13,11 @@ export interface PublicSettings {
   approverTitle: string
   approverName: string
   approvalDate: string
-  academicHeadLabel: string
-  academicHeadName: string
-  /** Հեռակա ուսուցման դասացուցակի ստորագրության տողը։ */
+  /**
+   * Ստորագրության առաջին տողը՝ **բոլոր** դասացուցակների տակ (առկա, հեռակա,
+   * մագիստրատուրա)՝ ինչպես պաշտոնական թղթային նմուշում։ Երկրորդ տողը ֆակուլտետի
+   * դեկանն է՝ `faculties.dean`-ից։
+   */
   partTimeHeadLabel: string
   partTimeHeadName: string
   /**
@@ -24,7 +26,6 @@ export interface PublicSettings {
    */
   logo: string
   approverSignature: string
-  academicHeadSignature: string
   partTimeHeadSignature: string
   seal: string
   /**

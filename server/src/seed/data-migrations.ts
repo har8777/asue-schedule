@@ -67,4 +67,26 @@ export const DATA_MIGRATIONS: Migration[] = [
       console.log('[DB] Ուսումնական բաժնի պետի ժամանակավոր անունը հանվեց կարգավորումներից')
     },
   },
+  {
+    version: 12,
+    name: 'drop-academic-head-signatory',
+    run: (db) => {
+      // Պաշտոնական թղթային նմուշում դասացուցակի տակ երկու ստորագրող կա՝
+      // «Ակադեմիական կազմի սպասարկման բաժնի պետ» և ֆակուլտետի դեկանը։
+      // «Ուսումնական բաժնի պետ»-ը մերն էր ավելացրած և հանվում է ամբողջությամբ։
+      const row = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'public_settings'")
+      if (!row) return
+      let stored: Record<string, unknown>
+      try {
+        stored = JSON.parse(row.value) as Record<string, unknown>
+      } catch {
+        return
+      }
+      const keys = ['academicHeadLabel', 'academicHeadName', 'academicHeadSignature']
+      if (!keys.some((key) => key in stored)) return
+      for (const key of keys) delete stored[key]
+      db.run("UPDATE settings SET value = ? WHERE key = 'public_settings'", JSON.stringify(stored))
+      console.log('[DB] «Ուսումնական բաժնի պետ» դաշտերը հանվեցին կարգավորումներից')
+    },
+  },
 ]

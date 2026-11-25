@@ -82,9 +82,16 @@ describe('Ստորագրողների տվյալները նմուշից', () => {
     assert.equal(body.partTimeHeadName, 'Ժ. Ստեփանյան')
   })
 
-  it('ուսումնական բաժնի պետի անունը նախապես լրացված չէ (հաճախակի փոփոխվող պաշտոն)', async () => {
+  it('«Ուսումնական բաժնի պետ» դաշտը այլևս չկա (նմուշում նման ստորագրող չկա)', async () => {
     const { body } = await api('GET', '/settings')
-    assert.equal(body.academicHeadName, '')
+    assert.equal(body.academicHeadName, undefined)
+    assert.equal(body.academicHeadLabel, undefined)
+    assert.equal(body.academicHeadSignature, undefined)
+  })
+
+  it('դասացուցակի ստորագրողի պաշտոնը ըստ նմուշի է', async () => {
+    const { body } = await api('GET', '/settings')
+    assert.equal(body.partTimeHeadLabel, 'Ակադեմիական կազմի սպասարկման բաժնի պետ')
   })
 
   it('Կառավարման ֆակուլտետի դեկանը լրացված է', async () => {
