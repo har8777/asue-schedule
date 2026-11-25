@@ -110,7 +110,8 @@ export const OfficialScheduleTable = ({
                         {slotCell && (
                           <>
                             <td rowSpan={slotCell.rowSpan} {...cellProps}>
-                              {slotCell.part?.subject ?? (clickable ? <span className="text-slate-300">+</span> : '')}
+                              {slotCell.part?.subject ??
+                                (clickable ? <span className="print-hidden text-slate-300">+</span> : '')}
                             </td>
                             <td rowSpan={slotCell.rowSpan} {...cellProps}>
                               {slotCell.part?.lecturers.map((name) => (
