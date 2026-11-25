@@ -79,8 +79,12 @@ describe('Ստորագրողների տվյալները նմուշից', () => {
     const { body } = await api('GET', '/settings')
     assert.equal(body.approverTitle, 'ՊՐՈՌԵԿՏՈՐ')
     assert.equal(body.approverName, 'Լ. Դանիելյան')
-    assert.equal(body.academicHeadName, 'Ա. Պետրոսյան')
     assert.equal(body.partTimeHeadName, 'Ժ. Ստեփանյան')
+  })
+
+  it('ուսումնական բաժնի պետի անունը նախապես լրացված չէ (հաճախակի փոփոխվող պաշտոն)', async () => {
+    const { body } = await api('GET', '/settings')
+    assert.equal(body.academicHeadName, '')
   })
 
   it('Կառավարման ֆակուլտետի դեկանը լրացված է', async () => {
